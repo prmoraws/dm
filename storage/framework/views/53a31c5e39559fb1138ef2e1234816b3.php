@@ -1,0 +1,471 @@
+<?php $__env->startSection('title', 'Ofícios de Trabalho'); ?>
+
+ <?php $__env->slot('header', null, []); ?> 
+    <div class="flex items-center space-x-3 animate-fade-in">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800 dark:text-gray-200" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <h2 class="capitalize font-semibold text-2xl text-gray-900 dark:text-gray-100 leading-tight">
+            <?php echo e(__('Ofícios de Trabalho')); ?>
+
+        </h2>
+    </div>
+ <?php $__env->endSlot(); ?>
+
+
+<div x-data="{
+    isIos: ['iPhone', 'iPad', 'iPod'].includes(navigator.platform) || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1),
+    viewOrDownload(oficioId) {
+        if (this.isIos) {
+            window.open('<?php echo e(route('trabalho.pdf.view', ['id' => 'TEMP_OFICIO_ID'])); ?>'.replace('TEMP_OFICIO_ID', oficioId), '_blank');
+        } else {
+            $wire.view(oficioId);
+        }
+    }
+}">
+    <div
+        class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if(session()->has('message')): ?>
+                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition
+                    class="bg-teal-50 dark:bg-teal-900/50 border-l-4 border-teal-500 rounded-lg shadow-lg my-6 p-4">
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-medium text-teal-800 dark:text-teal-200"><?php echo e(session('message')); ?></p>
+                        <button @click="show = false" class="text-teal-600 dark:text-teal-400">&times;</button>
+                    </div>
+                </div>
+            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <div class="w-full md:w-1/3">
+                        <input type="text" wire:model.live.debounce.300ms="searchTerm"
+                            class="w-full px-4 py-2 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 focus:ring-blue-500"
+                            placeholder="Buscar...">
+                    </div>
+                    <button wire:click="create"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Novo Ofício
+                    </button>
+                </div>
+
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($isOpen): ?>
+                    
+                    <div wire:key="create-edit-trabalho"
+                        class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-md z-50 overflow-y-auto p-4 flex items-start justify-center pt-10"
+                        @click.self="$wire.closeModal()">
+                        <div class="bg-gray-100 dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-2xl p-6">
+                            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
+                                <?php echo e($oficio_id ? 'Editar' : 'Criar'); ?> Ofício de Trabalho</h2>
+                            <form wire:submit.prevent="store" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label for="data_oficio"
+                                            class="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Data
+                                            do
+                                            Ofício</label><input type="date" wire:model.defer="data_oficio"
+                                            class="w-full rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">
+                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__errorArgs = ['data_oficio'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                            <span class="text-red-500 text-xs"><?php echo e($message); ?></span>
+                                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                    </div>
+                                    <div><label for="presidio_id"
+                                            class="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Presídio</label><select
+                                            wire:model.live="presidio_id"
+                                            class="w-full rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">
+                                            <option value="">Selecione...</option>
+                                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $presidioOptions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $id => $nome): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($id); ?>"><?php echo e($nome); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                        </select>
+                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__errorArgs = ['presidio_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                            <span class="text-red-500 text-xs"><?php echo e($message); ?></span>
+                                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                    </div>
+                                    <div><label
+                                            class="block text-sm font-bold text-gray-400 dark:text-gray-500 mb-2">Diretor(a)</label><input
+                                            type="text" wire:model="diretor_nome"
+                                            class="w-full rounded-md bg-gray-200 dark:bg-gray-700 dark:text-gray-300 cursor-not-allowed"
+                                            disabled></div>
+                                    <div><label for="dia_hora_evento"
+                                            class="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Data e
+                                            Hora
+                                            do Trabalho</label><input type="datetime-local"
+                                            wire:model.defer="dia_hora_evento"
+                                            class="w-full rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600">
+                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__errorArgs = ['dia_hora_evento'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                            <span class="text-red-500 text-xs"><?php echo e($message); ?></span>
+                                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                    </div>
+                                </div>
+                                <div wire:ignore class="md:col-span-2"><label
+                                        class="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Evangelistas</label>
+                                    <?php if (isset($component)) { $__componentOriginal67161929010f4f69450f41effc4be975 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal67161929010f4f69450f41effc4be975 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.advanced-select','data' => ['options' => $evangelistaOptions,'wire:model' => 'evangelistas','placeholder' => 'Selecione os evangelistas...']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('advanced-select'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['options' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($evangelistaOptions),'wire:model' => 'evangelistas','placeholder' => 'Selecione os evangelistas...']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal67161929010f4f69450f41effc4be975)): ?>
+<?php $attributes = $__attributesOriginal67161929010f4f69450f41effc4be975; ?>
+<?php unset($__attributesOriginal67161929010f4f69450f41effc4be975); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal67161929010f4f69450f41effc4be975)): ?>
+<?php $component = $__componentOriginal67161929010f4f69450f41effc4be975; ?>
+<?php unset($__componentOriginal67161929010f4f69450f41effc4be975); ?>
+<?php endif; ?>
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__errorArgs = ['evangelistas'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                        <span class="text-red-500 text-xs"><?php echo e($message); ?></span>
+                                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                </div>
+                                <div class="md:col-span-2"><label for="materiais"
+                                        class="block text-sm font-bold mb-2 text-gray-700 dark:text-gray-300">Materiais
+                                        (Opcional)</label>
+                                    <textarea wire:model.defer="materiais" id="materiais" rows="3"
+                                        class="w-full rounded-md dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"></textarea>
+                                </div>
+                                <div class="flex justify-end gap-3 pt-4"><button type="button" wire:click="closeModal"
+                                        class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-5 rounded-lg">Cancelar</button><button
+                                        type="submit"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg">Salvar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($isViewOpen && $selectedOficio): ?>
+                    <div wire:key="view-modal-trabalho"
+                        class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-md z-50 overflow-y-auto p-4 flex flex-col items-center justify-start pt-4 sm:pt-10">
+                        <div class="w-full max-w-4xl flex justify-end items-center mb-4 print:hidden">
+                            <button onclick="printOficio()"
+                                class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"><svg
+                                    class="h-5 w-5 inline-block mr-1" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm7-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>Imprimir</button>
+                            <button wire:click="closeViewModal" class="ml-4 p-2 rounded-full bg-white/50"><svg
+                                    class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg></button>
+                        </div>
+                        <div class="w-full overflow-x-auto flex justify-start md:justify-center"">
+                            <div id="oficio-para-impressao"
+                                class="w-[209mm] min-h-[296mm] bg-white text-black px-10 shadow-2xl font-sans text-sm">
+                                <div class="flex flex-col max-h-9/10"> 
+                                    <header
+                                        class="opacity-75 overflow-hidden flex flex-wrap object-scale-down justify-end items-start border-b-4 rounded-sm border-blue-950">
+                                        <div class="w-40 pb-1">
+                                            <img src="<?php echo e(asset('formaturas/logo-unp.png')); ?>" alt="Logo UNP">
+                                        </div>
+                                    </header>
+                                    
+                                    <p class="text-lg font-semibold text-center mt-1">Coordenadoria de Evangelização
+                                        Estadual nas Unidades Prisionais</p>
+
+                                    <main class="h-[55rem] flex-grow pt-6">
+                                        <div class="flex justify-between items-start">
+                                            <div class="space-y-0 text-left text-sm leading-snug">
+                                                <p class="font-bold pl-5"><?php echo e($selectedOficio->numero_oficio); ?></p>
+                                                <p class="pl-5 pb-4"><?php echo e($selectedOficio->data_formatada); ?></p>
+                                                <p class="font-bold pl-5"><?php echo e($selectedOficio->destinatario); ?></p>
+                                                <p class="font-bold pl-5"><?php echo e($selectedOficio->assunto_formatado); ?></p>
+                                                <p class="font-bold uppercase pl-5">
+                                                    <?php echo e($selectedOficio->diretor_formatado); ?></p>
+                                            </div>
+                                            <div
+                                                class="print:absolute print:right-0 w-64 border-2 border-red-600 p-2 text-xs space-y-0 shrink-0 ml-8">
+                                                <p class="text-center text-red-600 pb-2 font-bold">Confirmo recebimento
+                                                    e
+                                                    dou ciência.</p>
+                                                <p class="text-red-600 font-bold">Nome:
+                                                    ____________________________________ <span
+                                                        class="block h-3"></span>
+                                                </p>
+                                                <p class="text-red-600 font-bold">Assinatura:
+                                                    _______________________________ <span class="block h-3"></span></p>
+                                                <p class="text-red-600 font-bold">Data:
+                                                    ___________/___________/_____________ <span
+                                                        class="block h-3"></span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-6 space-y-4 text-justify text-sm leading-snug">
+                                            <p class="indent-8 px-5">Com os cumprimentos de estilo, a Universal nos
+                                                Presídios - UNP, vem, através de seu Coordenador Geral que a este
+                                                subscreve, requerer autorização de acesso para realizar o trabalho de
+                                                evangelismo, <span
+                                                    class="font-semibold"><?php echo e($selectedOficio->evento_formatado); ?></span>.
+                                            </p>
+                                            <div class="pl-8">
+                                                <p class="underline underline-offset-2 pl-5 pb-4">Requer ainda
+                                                    autorização de entrada dos evangelizadores:
+                                                </p>
+                                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $selectedOficio->lista_evangelistas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $evangelista): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <p class="font-semibold"><?php echo e($evangelista->nome); ?> - CPF:
+                                                        <?php echo e($evangelista->cpf); ?></p>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                            </div>
+                                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($selectedOficio->materiais): ?>
+                                                <div class="pl-8 pt-4">
+                                                    <p class="underline underline-offset-2 pl-5 pb-4">E dos seguintes
+                                                        materiais de apoio:</p>
+                                                    <p class="mt-1 pl-4 italic font-bold whitespace-pre-line">
+                                                        <?php echo e($selectedOficio->materiais); ?></p>
+                                                </div>
+                                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                            <p class="indent-8 px-5">Cumpre salientar nossa Instituição continua
+                                                comprometida a
+                                                corroborar com os cuidados necessários em que lhe compete, contribuindo
+                                                e
+                                                atendendo as orientações e determinações da Unidade. De plano, registra
+                                                e reitera protestos de elevada estima e
+                                                consideração. Que o Senhor Deus os abençoe!</p>
+                                        </div>
+                                        <div class="mt-16 pb-4 text-center">
+                                            <p>Atenciosamente,</p>
+                                            <div class="inline-block mt-2">
+                                                
+                                                <img src="<?php echo e(asset('formaturas/assinatura-pastor.png')); ?>"
+                                                    alt="Assinatura" class="h-20 mx-auto">
+                                                <div class="border-t border-black mt-1">
+                                                    <p class="font-semibold">Bispo Sérgio Simplício dos Santos</p>
+                                                    <p class="text-xs">Coordenador da UNP no Estado da Bahia</p>
+                                                    <p class="text-xs">Contato e WhatsApp (71)99982-9897 | <span
+                                                            class="text-blue-700 underline underline-offset-4">E-mail:
+                                                            sergsantos@universal.org</span></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </main>
+                                    <footer
+                                        class="opacity-75 sticky text-center mb-9 text-xs pt-2 border-t-4 rounded-sm border-blue-950 mt-auto">
+                                        <p
+                                            class="border-y-2 mx-52 text-xl text-blue-950 rounded-sm border-blue-950 font-bold">
+                                            UNIVERSAL NOS <span class="text-red-600">PRESÍDIOS</span></p>
+                                        <p class="pt-2">Avenida Antônio Carlos Magalhães, 4197 Pituba, Salvador - BA
+                                            40280-000</p>
+                                    </footer>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($confirmDeleteId): ?>
+                    <div
+                        class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                        <div class="bg-gray-100 dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-md p-6 mx-auto">
+                            <h3 class="text-xl font-bold">Confirmar Exclusão</h3>
+                            <p class="my-4">Tem certeza que deseja apagar este ofício?</p>
+                            <div class="flex justify-end gap-3"><button wire:click="$set('confirmDeleteId', null)"
+                                    class="bg-gray-300 py-2 px-4 rounded-lg">Cancelar</button><button
+                                    wire:click="delete"
+                                    class="bg-red-600 text-white py-2 px-4 rounded-lg">Apagar</button></div>
+                        </div>
+                    </div>
+                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+
+                <div class="hidden md:block overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+                    <table class="w-full table-auto">
+                        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-sm">
+                            <tr>
+                                <th class="py-3 px-6 text-left">Presídio</th>
+                                <th class="py-3 px-6 text-left">Data do Trabalho</th>
+                                <th class="py-3 px-6 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $results; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $oficio): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 animate-slide-up"
+                                    style="--delay: <?php echo e(($index % 10) * 0.05); ?>s;">
+                                    <td class="py-3 px-6 text-left text-gray-700 dark:text-gray-300"><?php echo e($oficio->presidio->nome ?? 'N/A'); ?></td>
+                                    <td class="py-3 px-6 text-left text-gray-700 dark:text-gray-300">
+                                        <?php echo e(\Carbon\Carbon::parse($oficio->dia_hora_evento)->format('d/m/Y H:i')); ?></td>
+                                    <td class="py-3 px-6 text-center">
+                                        <div class="flex items-center justify-center space-x-3">
+                                            <button @click="viewOrDownload(<?php echo e($oficio->id); ?>)"
+                                                class="w-5 transform hover:text-green-500"><svg fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg></button>
+                                            <button wire:click="edit(<?php echo e($oficio->id); ?>)"
+                                                class="w-5 transform hover:text-blue-500"><svg fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                </svg></button>
+                                            <button wire:click="confirmDelete(<?php echo e($oficio->id); ?>)"
+                                                class="w-5 transform hover:text-red-500"><svg fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M9 7v12m6-12v12" />
+                                                </svg></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                <tr>
+                                    <td colspan="3" class="py-3 px-6 text-center text-gray-500 dark:text-gray-400">Nenhum ofício
+                                        encontrado.</td>
+                                </tr>
+                            <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="md:hidden space-y-4">
+                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $results; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $oficio): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 animate-slide-up"
+                            style="--delay: <?php echo e(($index % 10) * 0.05); ?>s;">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1 space-y-1">
+                                    <p class="text-lg font-bold text-gray-900 dark:text-gray-100"><?php echo e($oficio->presidio->nome ?? 'N/A'); ?></p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Trabalho:
+                                        <?php echo e(\Carbon\Carbon::parse($oficio->dia_hora_evento)->format('d/m/Y H:i')); ?></p>
+                                </div>
+                                <div class="flex flex-col space-y-4 ml-4">
+                                    <button @click="viewOrDownload(<?php echo e($oficio->id); ?>)"
+                                        class="w-5 text-gray-500"><svg fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg></button>
+                                    <button wire:click="edit(<?php echo e($oficio->id); ?>)" class="w-5 text-gray-500"><svg
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg></button>
+                                    <button wire:click="confirmDelete(<?php echo e($oficio->id); ?>)"
+                                        class="w-5 text-gray-500"><svg fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M9 7v12m6-12v12" />
+                                        </svg></button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 text-center text-gray-500">
+                            Nenhum ofício encontrado.</div>
+                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                </div>
+
+                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($results->hasPages()): ?>
+                    <div class="pt-4"><?php echo e($results->links()); ?></div>
+                <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .animate-slide-up {
+            opacity: 0;
+            animation: slideUp 0.5s ease-out forwards;
+            animation-delay: var(--delay, 0s);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #oficio-para-impressao,
+            #oficio-para-impressao * {
+                visibility: visible;
+            }
+
+            #oficio-para-impressao {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: auto;
+                margin: 0;
+                padding: 0;
+                border: none;
+                box-shadow: none;
+            }
+        }
+    </style>
+    <script>
+        function printOficio() {
+            window.print();
+        }
+    </script>
+</div>
+<?php /**PATH /home/moraws/dm/resources/views/livewire/unp/oficios/oficio-trabalho.blade.php ENDPATH**/ ?>
