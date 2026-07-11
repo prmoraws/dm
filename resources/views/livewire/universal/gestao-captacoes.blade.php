@@ -192,8 +192,15 @@
                     </dl>
                 </div>
             </div>
-            <div class="p-4 bg-gray-200 dark:bg-gray-800/50 flex justify-end">
-                 <x-secondary-button wire:click="closeViewModal">Fechar</x-secondary-button>
+            
+            {{-- Rodapé do Modal com botões reativos e alinhamento responsivo flex-col-reverse sm:flex-row --}}
+            <div class="p-4 bg-gray-200 dark:bg-gray-800/50 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <x-secondary-button wire:click="closeViewModal" class="w-full sm:w-auto justify-center">Fechar</x-secondary-button>
+                
+                @if($selectedCaptacao->status === 'pendente')
+                    <x-danger-button wire:click="confirmRejection({{ $selectedCaptacao->id }})" class="w-full sm:w-auto justify-center">Rejeitar</x-danger-button>
+                    <x-button wire:click="approve({{ $selectedCaptacao->id }})" wire:confirm="Tem certeza que deseja aprovar este cadastro? Um novo registro de Pessoa será criado." class="w-full sm:w-auto justify-center bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold">Aprovar</x-button>
+                @endif
             </div>
         </div>
     </div>

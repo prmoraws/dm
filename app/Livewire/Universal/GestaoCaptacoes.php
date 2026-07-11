@@ -38,13 +38,13 @@ class GestaoCaptacoes extends Component
         $this->filterStatus = $status;
         $this->resetPage();
     }
-    
+
     public function view(CaptacaoPessoa $captacao)
     {
         $this->selectedCaptacao = $captacao->load('bloco', 'regiao', 'igreja', 'categoria', 'cargo', 'grupo', 'cidade.estado');
         $this->isViewOpen = true;
     }
-    
+
     public function closeViewModal()
     {
         $this->isViewOpen = false;
@@ -81,15 +81,16 @@ class GestaoCaptacoes extends Component
         try {
             DB::transaction(function () use ($captacao) {
                 $attributes = $captacao->getAttributes();
-                
-                        // Mover a foto
+                $fotoOriginal = $captacao->foto; // Guarda o caminho original para deletar depois
+
+                // Mover a foto para a pasta definitiva
                 if ($captacao->foto && Storage::disk('public_disk')->exists($captacao->foto)) {
                     $newPath = str_replace('captacao_temp/', 'pessoas/', $captacao->foto);
-                    Storage::disk('public_disk')->move($captacao->foto, $newPath);
+                    Storage::disk('public_disk')->copy($captacao->foto, $newPath); // Copia em vez de mover direto para garantir a deleção limpa
                     $attributes['foto'] = $newPath;
                 }
 
-                        // Mover a assinatura
+                // Mover a assinatura para a pasta definitiva
                 if ($captacao->assinatura && Storage::disk('public_disk')->exists($captacao->assinatura)) {
                     $newPath = str_replace('captacao_temp/signatures/', 'pessoas/signatures/', $captacao->assinatura);
                     Storage::disk('public_disk')->move($captacao->assinatura, $newPath);
@@ -97,11 +98,15 @@ class GestaoCaptacoes extends Component
                 }
 
                 unset(
-                    $attributes['id'], $attributes['status'], $attributes['motivo_rejeicao'],
-                    $attributes['revisado_por'], $attributes['revisado_em'],
-                    $attributes['created_at'], $attributes['updated_at']
+                    $attributes['id'],
+                    $attributes['status'],
+                    $attributes['motivo_rejeicao'],
+                    $attributes['revisado_por'],
+                    $attributes['revisado_em'],
+                    $attributes['created_at'],
+                    $attributes['updated_at']
                 );
-                
+
                 $attributes['telefone']   = $attributes['telefone'] ?? '';
                 $attributes['email']      = $attributes['email'] ?? '';
                 $attributes['cep']        = $attributes['cep'] ?? '';
@@ -109,21 +114,24 @@ class GestaoCaptacoes extends Component
                 $attributes['aptidoes']   = $attributes['aptidoes'] ?? '';
                 $attributes['testemunho'] = $attributes['testemunho'] ?? '';
                 $attributes['foto']       = $attributes['foto'] ?? '';
-                
-                // ==================================================================
-                // CORREÇÃO: Define um valor padrão para 'grupo_id' se ele for nulo.
-                // Assumimos que o grupo com ID 1 é um grupo geral/padrão.
-                // ==================================================================
                 $attributes['grupo_id']   = $attributes['grupo_id'] ?? 1;
 
                 Pessoa::create($attributes);
-                
+
                 $captacao->update([
                     'status' => 'aprovado',
                     'revisado_por' => auth()->id(),
                     'revisado_em' => now(),
                 ]);
+
+                // APÓS CONCLUIR: Apaga a foto antiga que ficou na pasta temporária
+                if ($fotoOriginal && Storage::disk('public_disk')->exists($fotoOriginal)) {
+                    Storage::disk('public_disk')->delete($fotoOriginal);
+                }
             });
+
+            // FECHA O MODAL AUTOMATICAMENTE APÓS APROVAÇÃO
+            $this->closeViewModal();
 
             session()->flash('message', 'Captação aprovada com sucesso! Um novo registro de Pessoa foi criado.');
         } catch (\Exception $e) {
@@ -136,7 +144,7 @@ class GestaoCaptacoes extends Component
     {
         $captacoes = CaptacaoPessoa::query()
             ->with(['igreja'])
-            ->when($this->search, fn ($q) => $q->where('nome', 'like', "%{$this->search}%")->orWhere('email', 'like', "%{$this->search}%"))
+            ->when($this->search, fn($q) => $q->where('nome', 'like', "%{$this->search}%")->orWhere('email', 'like', "%{$this->search}%"))
             ->where('status', $this->filterStatus)
             ->orderBy($this->sortBy, $this->sortDir)
             ->paginate(10);

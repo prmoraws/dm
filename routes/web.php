@@ -19,7 +19,7 @@ use App\Livewire\Unp\Dashboard as UnpDashboard;
 use App\Livewire\Evento\{Entregas, Instituicoes, Terreiros};
 use App\Livewire\Universal\{Banners, Blocos, Categorias, Pastores, PastorUnp, CarroUnp, Pessoas, Regiaos, Igrejas, GestaoCaptacoes};
 use App\Http\Controllers\Universal\PastorUnpPrintController;
-use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos};
+use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos, DashboardBatismo};
 use App\Livewire\Unp\Oficios\{Anexos, Convidados, DadosCurso, InformacaoCurso, ListaCertificado, OficioCredencial, OficioEvento, OficioFormatura, OficioGeral, OficioTrabalho, OficioCop, OficioCurso, Reeducandos};
 use App\Livewire\Universal\{CaptacaoUnp, Credenciados, CaptacaoCredenciadoWizard, GestaoCaptacaoCredenciados, CaptacaoSucesso, EdicaoCarroPublica};
 use Illuminate\Support\Facades\Route;
@@ -36,11 +36,18 @@ use App\Livewire\Politica\CandidatesManager;
 use App\Livewire\Politica\EspelhoManager;
 use App\Http\Controllers\Universal\PessoaPrintController;
 use Illuminate\Support\Facades\Artisan;
+use App\Livewire\Unp\FormularioBatismo;
 
 
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+Route::get('/limpar-tudo', function() {
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    return "Cache limpo com sucesso!";
 });
 
 
@@ -49,6 +56,7 @@ Route::get('/cadastro-pessoas', CaptacaoPessoaWizard::class)->name('captacao.pes
 Route::get('/captacao/credenciado', CaptacaoCredenciadoWizard::class)->name('captacao.credenciado');
 Route::get('/captacao/sucesso', CaptacaoSucesso::class)->name('captacao.sucesso');
 Route::get('/carro/editar-veiculo', EdicaoCarroPublica::class)->name('carro.public.edit');
+Route::get('/batismo', FormularioBatismo::class)->name('batismo.publico');
 
 
 Route::middleware([
@@ -67,6 +75,7 @@ Route::middleware([
         Route::get('/cargos', Cargos::class)->name('cargos');
         Route::get('/grupos', Grupos::class)->name('grupos');
         Route::get('/formaturas', Formaturas::class)->name('formaturas');
+        Route::get('/dashboard-batismo', DashboardBatismo::class)->name('batismo.dashboard');
         Route::get('/instrutores', Instrutores::class)->name('instrutores');
         Route::get('/presidios', Presidios::class)->name('presidios');
         Route::get('/cursos', Cursos::class)->name('cursos');
@@ -153,4 +162,7 @@ Route::middleware([
         Route::get('/secretaria/gestao-credenciados', GestaoCaptacaoCredenciados::class)->name('secretaria.gestao-credenciados');
         // Você pode adicionar outras rotas da secretaria aqui no futuro
     });
+
+
+
 });

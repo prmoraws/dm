@@ -76,7 +76,7 @@ class CaptacaoPessoaWizard extends Component
                 'nome' => 'required|string|min:3|max:255',
                 'celular' => 'required|string|max:20',
                 'email' => 'nullable|email|max:255|unique:captacao_pessoas,email',
-                'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'foto' => 'required|image|mimes:jpeg,png,jpg|max:10240',
             ],
             4 => [
                 'estado_id' => 'required|exists:estados,id',

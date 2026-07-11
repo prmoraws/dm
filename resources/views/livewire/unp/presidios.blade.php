@@ -134,6 +134,26 @@
                                             wire:model.defer="contato_laborativa"
                                             class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-800 dark:text-gray-300">
                                     </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-bold text-gray-800 dark:text-gray-300 mb-2">
+                                            Selecione os Blocos que atendem este Presídio
+                                        </label>
+                                        <div
+                                            class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md max-h-40 overflow-y-auto">
+                                            @foreach ($todosBlocos as $bloco)
+                                                <label
+                                                    class="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                                    <input type="checkbox" value="{{ $bloco->id }}"
+                                                        wire:model.defer="blocos_selecionados"
+                                                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+                                                    <span>{{ $bloco->nome }}</span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                        @error('blocos_selecionados')
+                                            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
+                                        @enderror
+                                    </div>
                                 </div>
                                 <div
                                     class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -214,41 +234,60 @@
                                     <p class="text-gray-800 dark:text-gray-300 mt-1 whitespace-pre-wrap">
                                         {{ $selectedPresidio->interno ?: 'Não informado' }}</p>
                                 </div>
+                                <div class="md:col-span-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                    <p class="font-semibold text-gray-500 dark:text-gray-400">Blocos Atendidos:</p>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        @forelse($selectedPresidio->blocos as $b)
+                                            <span
+                                                class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2.5 py-1 rounded-md">
+                                                {{ $b->nome }}
+                                            </span>
+                                        @empty
+                                            <span class="text-gray-400 text-xs italic">Nenhum bloco associado.</span>
+                                        @endforelse
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 @endif
 
-                  {{-- INÍCIO DO MODAL DE EXCLUSÃO IMPLEMENTADO --}}
+                {{-- INÍCIO DO MODAL DE EXCLUSÃO IMPLEMENTADO --}}
                 @if ($confirmDeleteId)
                     <div wire:key="delete-modal"
                         class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-md z-50 flex items-center justify-center p-4"
                         @click.self="$wire.set('confirmDeleteId', null)">
                         <div class="bg-gray-100 dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-md p-6 mx-auto">
                             <div class="flex items-center gap-3 mb-4">
-                                <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                                 <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Confirmar Exclusão</h3>
                             </div>
-                            <p class="text-gray-600 dark:text-gray-300 mb-6">Tem certeza que deseja apagar este presídio? Esta ação não pode ser desfeita.</p>
+                            <p class="text-gray-600 dark:text-gray-300 mb-6">Tem certeza que deseja apagar este
+                                presídio? Esta ação não pode ser desfeita.</p>
                             <div class="flex justify-end gap-3">
-                                <button wire:click="$set('confirmDeleteId', null)" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-5 rounded-lg">Cancelar</button>
-                                <button wire:click="delete" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg flex items-center gap-2">Sim, Excluir</button>
+                                <button wire:click="$set('confirmDeleteId', null)"
+                                    class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-5 rounded-lg">Cancelar</button>
+                                <button wire:click="delete"
+                                    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg flex items-center gap-2">Sim,
+                                    Excluir</button>
                             </div>
                         </div>
                     </div>
                 @endif
-                
+
 
                 <div class="hidden md:block overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
                     <table class="w-full table-auto">
                         <thead class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-sm">
                             <tr>
                                 <th class="py-3 px-6 text-left cursor-pointer" wire:click="sortBy('nome')">Nome</th>
+                                <th class="py-3 px-6 text-left">Blocos Vinculados</th>
                                 <th class="py-3 px-6 text-left cursor-pointer" wire:click="sortBy('diretor')">Diretor
                                 </th>
-                                <th class="py-3 px-6 text-left">Contato</th>
                                 <th class="py-3 px-6 text-center">Ações</th>
                             </tr>
                         </thead>
@@ -258,8 +297,21 @@
                                     class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 animate-slide-up"
                                     style="--delay: {{ ($index % 10) * 0.05 }}s;">
                                     <td class="py-3 px-6 text-left">{{ $presidio->nome }}</td>
+                                    <td class="py-3 px-6 text-left">
+                                        @if ($presidio->blocos->count() > 0)
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach ($presidio->blocos as $b)
+                                                    <span
+                                                        class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs px-2 py-0.5 rounded-md font-medium">
+                                                        {{ $b->nome }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-gray-400 text-xs italic">Nenhum bloco</span>
+                                        @endif
+                                    </td>
                                     <td class="py-3 px-6 text-left">{{ $presidio->diretor }}</td>
-                                    <td class="py-3 px-6 text-left">{{ $presidio->contato_diretor }}</td>
                                     <td class="py-3 px-6 text-center">
                                         <div class="flex items-center justify-center space-x-3">
                                             <button wire:click="view({{ $presidio->id }})"

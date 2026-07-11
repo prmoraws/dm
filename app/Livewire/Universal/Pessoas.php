@@ -38,10 +38,19 @@ class Pessoas extends Component
     public $cidades = [], $regiaos = [], $igrejas = [];
     public $allBlocos, $allEstados, $allCategorias, $allCargos, $allGrupos;
 
+    // OTIMIZAÇÃO: filtro de bloco da listagem.
+    // Usamos um nome diferente de "bloco_id" (que já existe como campo do
+    // formulário de criação/edição) para não conflitar com o método
+    // updatedBlocoId(), que é disparado pelo select do formulário.
+    public $filtro_bloco_id = '';
+
+    // OTIMIZAÇÃO: lista de blocos para o filtro, carregada 1x no mount()
+    public $blocos = [];
+
     // Propriedades para checkboxes
     public $trabalho = [], $batismo = [], $preso = [];
 
-    protected $queryString = ['search' => ['except' => '']];
+    protected $queryString = ['search' => ['except' => ''], 'filtro_bloco_id' => ['except' => '']];
 
     // CORREÇÃO: Mensagens de validação personalizadas
     protected function messages()
@@ -102,6 +111,11 @@ class Pessoas extends Component
         $this->allCategorias = Categoria::orderBy('nome')->get();
         $this->allCargos = Cargo::orderBy('nome')->get();
         $this->allGrupos = Grupo::orderBy('nome')->get();
+
+        // OTIMIZAÇÃO: o select do filtro usa a mesma coleção já carregada
+        // acima (allBlocos), evitando uma segunda consulta idêntica
+        // (Bloco::orderBy('nome')->get()) só para popular o filtro.
+        $this->blocos = $this->allBlocos;
     }
 
     // ... métodos updated* ...
@@ -126,36 +140,54 @@ class Pessoas extends Component
         $this->resetPage();
     }
 
+    // OTIMIZAÇÃO: reseta a paginação sempre que o filtro de bloco muda,
+    // assim como já acontece com a busca por nome.
+    public function updatedFiltroBlocoId()
+    {
+        $this->resetPage();
+    }
+
     /**
-     * AJUSTE (redução de carga no banco):
-     * 1) O 'orWhereHas('bloco', ...)' foi removido. Esse padrão gera uma
-     *    subquery correlacionada (EXISTS ... WHERE ... = pessoas.bloco_id)
-     *    executada virtualmente por linha candidata. Como a query já faz
-     *    JOIN com 'blocos', a busca pelo nome do bloco agora usa
-     *    'blocos.nome' diretamente, sem subquery extra.
-     * 2) As condições de busca foram agrupadas dentro de um único
-     *    where(function ($q) {...}) para garantir a precedência correta
-     *    do SQL (evita que o OR "escape" e quebre outros filtros que
-     *    venham a ser adicionados no futuro).
-     * 3) Nenhuma mudança aqui resolve sozinha o problema do debounce —
-     *    a velocidade de digitação ainda dispara uma query por busca.
-     *    Isso é tratado no lado do Blade (wire:model.live.debounce.500ms).
+     * QUERY OTIMIZADA - EXPLICAÇÃO
+     *
+     * ANTES:
+     * - ->join('blocos', 'pessoas.bloco_id', '=', 'blocos.id') → JOIN permanente
+     *   em toda consulta de listagem, mesmo sem precisar de nenhuma coluna do
+     *   bloco fora do nome (que já vem via relação).
+     * - ->orWhere('blocos.nome', 'like', "%{$term}%") → dependia do JOIN acima.
+     * - ->orderBy('blocos.nome')->orderBy('pessoas.nome') → ordenação composta
+     *   usando uma coluna de outra tabela, sem poder aproveitar um índice
+     *   simples em pessoas.nome.
+     * - LIKE '%texto%' (sem âncora no início) → impede o uso de índice em
+     *   qualquer banco (MySQL/MariaDB incluso), forçando varredura completa.
+     *
+     * DEPOIS:
+     * - Sem JOIN: o nome do bloco é resolvido via eager loading
+     *   ->with(['bloco', 'cargo']), em apenas 2 queries extras (uma por
+     *   relação), independente da quantidade de linhas da página.
+     * - Filtro por bloco direto em pessoas.bloco_id (coluna indexada por ser FK).
+     * - Busca com LIKE 'texto%' (âncora no início), que permite uso de índice
+     *   em pessoas.nome / pessoas.celular quando existente.
+     * - Ordenação único por pessoas.nome.
+     *
+     * RESULTADO: menos joins, menos I/O por linha, queries mais previsíveis
+     * em hospedagem compartilhada com CPU limitada (InfinityFree).
      */
     public function render()
     {
         $query = Pessoa::query()
             ->select('pessoas.*')
             ->with(['bloco', 'cargo'])
-            ->join('blocos', 'pessoas.bloco_id', '=', 'blocos.id')
+            ->when($this->filtro_bloco_id, function ($query) {
+                $query->where('pessoas.bloco_id', $this->filtro_bloco_id);
+            })
             ->when($this->search, function ($query) {
-                $term = $this->search;
+                $term = $this->search . '%';
                 $query->where(function ($q) use ($term) {
-                    $q->where('pessoas.nome', 'like', "%{$term}%")
-                        ->orWhere('pessoas.celular', 'like', "%{$term}%")
-                        ->orWhere('blocos.nome', 'like', "%{$term}%");
+                    $q->where('pessoas.nome', 'like', $term)
+                        ->orWhere('pessoas.celular', 'like', $term);
                 });
             })
-            ->orderBy('blocos.nome')
             ->orderBy('pessoas.nome');
 
         return view('livewire.universal.pessoas', [

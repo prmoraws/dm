@@ -95,7 +95,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="md:col-span-2">
                             <label for="nome" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome Completo</label>
-                            <input type="text" wire:model.lazy="nome" id="nome" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
+                            <input required type="text" wire:model.lazy="nome" id="nome" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                             @error('nome') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
                         <div>
@@ -105,7 +105,7 @@
                         </div>
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                            <input type="email" wire:model.lazy="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
+                            <input required type="email" wire:model.lazy="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                             @error('email') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
                         <div class="md:col-span-2">
@@ -139,7 +139,7 @@
                         </div>
                         <div class="md:col-span-2">
                             <label for="endereco" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Endereço (Rua, Nº)</label>
-                            <input type="text" wire:model.lazy="endereco" id="endereco" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
+                            <input required type="text" wire:model.lazy="endereco" id="endereco" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                             @error('endereco') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
                         <div>
@@ -149,7 +149,7 @@
                         </div>
                         <div>
                             <label for="cep" class="block text-sm font-medium text-gray-700 dark:text-gray-300">CEP</label>
-                            <input type="text" wire:model.lazy="cep" id="cep" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
+                            <input required type="text" wire:model.lazy="cep" id="cep" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                             @error('cep') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
                     </div>
@@ -161,7 +161,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
                         <div>
                             <label for="profissao" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Profissão</label>
-                            <input type="text" wire:model.lazy="profissao" id="profissao" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
+                            <input required type="text" wire:model.lazy="profissao" id="profissao" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                         </div>
                         <div>
                             <label for="aptidoes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Aptidões</label>
@@ -169,10 +169,10 @@
                         </div>
                         <div>
                             <label for="conversao" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data de Conversão</label>
-                            <input type="date" wire:model.lazy="conversao" id="conversao" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
+                            <input required type="date" wire:model.lazy="conversao" id="conversao" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                         </div>
                         <div>
-                            <label for="obra" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Entrada na Obra</label>
+                            <label for="obra" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Entrada na Obra ou no Grupo </label>
                             <input type="date" wire:model.lazy="obra" id="obra" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                         </div>
                         <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
@@ -198,7 +198,7 @@
                 @if($step === 6)
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">5. Testemunho</h3>
-                    <textarea wire:model.lazy="testemunho" rows="6" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700"></textarea>
+                    <textarea required wire:model.lazy="testemunho" rows="6" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700"></textarea>
                     @error('testemunho') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                 </div>
                 @endif

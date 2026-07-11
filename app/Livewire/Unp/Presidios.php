@@ -3,10 +3,10 @@
 namespace App\Livewire\Unp;
 
 use App\Models\Unp\Presidio;
+use App\Models\Universal\Bloco; // Importado para buscar os blocos no formulário
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Validation\ValidationException;
 
 class Presidios extends Component
 {
@@ -17,9 +17,13 @@ class Presidios extends Component
     public $isOpen = false, $isViewOpen = false, $confirmDeleteId = null;
     public $selectedPresidio, $errorMessage = '';
 
+    // Nova propriedade para armazenar os blocos selecionados no formulário
+    public $blocos_selecionados = [];
+
     public function render()
     {
-        $query = Presidio::query()
+        // Eager loading de 'blocos' para evitar o problema de N+1 consultas na listagem
+        $query = Presidio::with('blocos')
             ->when($this->searchTerm, function ($query) {
                 $query->where('nome', 'like', '%' . $this->searchTerm . '%')
                     ->orWhere('diretor', 'like', '%' . $this->searchTerm . '%')
@@ -27,10 +31,14 @@ class Presidios extends Component
             })
             ->orderBy($this->sortField, $this->sortDirection);
 
-        $presidios = $query->paginate(10); // Paginação ajustada para 10
+        $presidios = $query->paginate(10);
+
+        // Buscamos todos os blocos disponíveis para popular o select/checkbox do formulário
+        $todosBlocos = Bloco::orderBy('nome', 'asc')->get();
 
         return view('livewire.unp.presidios', [
             'presidios' => $presidios,
+            'todosBlocos' => $todosBlocos,
         ]);
     }
 
@@ -44,15 +52,18 @@ class Presidios extends Component
     {
         $this->isOpen = true;
     }
+
     public function closeModal()
     {
         $this->isOpen = false;
         $this->resetInputFields();
     }
+
     public function openViewModal()
     {
         $this->isViewOpen = true;
     }
+
     public function closeViewModal()
     {
         $this->isViewOpen = false;
@@ -71,6 +82,7 @@ class Presidios extends Component
         $this->contato_laborativa = '';
         $this->visita = '';
         $this->interno = '';
+        $this->blocos_selecionados = []; // Reseta a seleção de blocos
         $this->resetErrorBag();
     }
 
@@ -89,7 +101,10 @@ class Presidios extends Component
         ]);
 
         try {
-            Presidio::updateOrCreate(['id' => $this->presidio_id], $validatedData);
+            $presidio = Presidio::updateOrCreate(['id' => $this->presidio_id], $validatedData);
+
+            // Sincroniza os blocos na tabela intermediária (pivot)
+            $presidio->blocos()->sync($this->blocos_selecionados);
 
             session()->flash('message', $this->presidio_id ? 'Presídio atualizado com sucesso!' : 'Presídio cadastrado com sucesso!');
             $this->closeModal();
@@ -100,15 +115,19 @@ class Presidios extends Component
 
     public function edit($id)
     {
-        $presidio = Presidio::findOrFail($id);
+        $presidio = Presidio::with('blocos')->findOrFail($id);
         $this->presidio_id = $id;
         $this->fill($presidio);
+        
+        // Carrega os IDs dos blocos já vinculados a este presídio
+        $this->blocos_selecionados = $presidio->blocos->pluck('id')->map(fn($id) => (string)$id)->toArray();
+        
         $this->openModal();
     }
 
     public function view($id)
     {
-        $this->selectedPresidio = Presidio::findOrFail($id);
+        $this->selectedPresidio = Presidio::with('blocos')->findOrFail($id);
         $this->openViewModal();
     }
 
@@ -120,7 +139,11 @@ class Presidios extends Component
     public function delete()
     {
         if ($this->confirmDeleteId) {
-            Presidio::findOrFail($this->confirmDeleteId)->delete();
+            $presidio = Presidio::findOrFail($this->confirmDeleteId);
+            // Remove os vínculos na pivot antes de deletar o presídio
+            $presidio->blocos()->detach();
+            $presidio->delete();
+            
             session()->flash('message', 'Presídio excluído com sucesso!');
             $this->confirmDeleteId = null;
         }

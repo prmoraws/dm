@@ -4,6 +4,8 @@ namespace App\Models\Unp;
 
 use App\Models\Unp\Curso;
 use App\Models\Unp\Formatura;
+use App\Models\Universal\Bloco;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -19,5 +21,9 @@ class Presidio extends Model
     public function formaturas(): HasMany
     {
         return $this->hasMany(Formatura::class);
+    }
+    public function blocos(): BelongsToMany
+    {
+        return $this->belongsToMany(Bloco::class, 'bloco_presidio');
     }
 }

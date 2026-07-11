@@ -157,6 +157,33 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                                             wire:model.defer="contato_laborativa"
                                             class="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-800 dark:text-gray-300">
                                     </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-bold text-gray-800 dark:text-gray-300 mb-2">
+                                            Selecione os Blocos que atendem este Presídio
+                                        </label>
+                                        <div
+                                            class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md max-h-40 overflow-y-auto">
+                                            <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $todosBlocos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $bloco): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <label
+                                                    class="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                                    <input type="checkbox" value="<?php echo e($bloco->id); ?>"
+                                                        wire:model.defer="blocos_selecionados"
+                                                        class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+                                                    <span><?php echo e($bloco->nome); ?></span>
+                                                </label>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                        </div>
+                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__errorArgs = ['blocos_selecionados'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                                            <span class="text-red-500 text-sm mt-1"><?php echo e($message); ?></span>
+                                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                    </div>
                                 </div>
                                 <div
                                     class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -237,41 +264,61 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                                     <p class="text-gray-800 dark:text-gray-300 mt-1 whitespace-pre-wrap">
                                         <?php echo e($selectedPresidio->interno ?: 'Não informado'); ?></p>
                                 </div>
+                                <div class="md:col-span-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                    <p class="font-semibold text-gray-500 dark:text-gray-400">Blocos Atendidos:</p>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__empty_1 = true; $__currentLoopData = $selectedPresidio->blocos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $b): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                            <span
+                                                class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2.5 py-1 rounded-md">
+                                                <?php echo e($b->nome); ?>
+
+                                            </span>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                            <span class="text-gray-400 text-xs italic">Nenhum bloco associado.</span>
+                                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 
-                  
+                
                 <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($confirmDeleteId): ?>
                     <div wire:key="delete-modal"
                         class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-md z-50 flex items-center justify-center p-4"
                         @click.self="$wire.set('confirmDeleteId', null)">
                         <div class="bg-gray-100 dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-md p-6 mx-auto">
                             <div class="flex items-center gap-3 mb-4">
-                                <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                                 <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Confirmar Exclusão</h3>
                             </div>
-                            <p class="text-gray-600 dark:text-gray-300 mb-6">Tem certeza que deseja apagar este presídio? Esta ação não pode ser desfeita.</p>
+                            <p class="text-gray-600 dark:text-gray-300 mb-6">Tem certeza que deseja apagar este
+                                presídio? Esta ação não pode ser desfeita.</p>
                             <div class="flex justify-end gap-3">
-                                <button wire:click="$set('confirmDeleteId', null)" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-5 rounded-lg">Cancelar</button>
-                                <button wire:click="delete" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg flex items-center gap-2">Sim, Excluir</button>
+                                <button wire:click="$set('confirmDeleteId', null)"
+                                    class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2 px-5 rounded-lg">Cancelar</button>
+                                <button wire:click="delete"
+                                    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-5 rounded-lg flex items-center gap-2">Sim,
+                                    Excluir</button>
                             </div>
                         </div>
                     </div>
                 <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
-                
+
 
                 <div class="hidden md:block overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
                     <table class="w-full table-auto">
                         <thead class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-sm">
                             <tr>
                                 <th class="py-3 px-6 text-left cursor-pointer" wire:click="sortBy('nome')">Nome</th>
+                                <th class="py-3 px-6 text-left">Blocos Vinculados</th>
                                 <th class="py-3 px-6 text-left cursor-pointer" wire:click="sortBy('diretor')">Diretor
                                 </th>
-                                <th class="py-3 px-6 text-left">Contato</th>
                                 <th class="py-3 px-6 text-center">Ações</th>
                             </tr>
                         </thead>
@@ -281,8 +328,22 @@ unset($__errorArgs, $__bag); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendB
                                     class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 animate-slide-up"
                                     style="--delay: <?php echo e(($index % 10) * 0.05); ?>s;">
                                     <td class="py-3 px-6 text-left"><?php echo e($presidio->nome); ?></td>
+                                    <td class="py-3 px-6 text-left">
+                                        <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if($presidio->blocos->count() > 0): ?>
+                                            <div class="flex flex-wrap gap-1">
+                                                <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php $__currentLoopData = $presidio->blocos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $b): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <span
+                                                        class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs px-2 py-0.5 rounded-md font-medium">
+                                                        <?php echo e($b->nome); ?>
+
+                                                    </span>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="text-gray-400 text-xs italic">Nenhum bloco</span>
+                                        <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                    </td>
                                     <td class="py-3 px-6 text-left"><?php echo e($presidio->diretor); ?></td>
-                                    <td class="py-3 px-6 text-left"><?php echo e($presidio->contato_diretor); ?></td>
                                     <td class="py-3 px-6 text-center">
                                         <div class="flex items-center justify-center space-x-3">
                                             <button wire:click="view(<?php echo e($presidio->id); ?>)"

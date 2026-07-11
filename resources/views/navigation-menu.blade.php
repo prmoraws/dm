@@ -37,6 +37,7 @@
                                 'links' => [
                                     ['route' => 'dashboard.unp', 'label' => 'Dashboard'],
                                     ['is_divider' => true],
+                                    ['route' => 'batismo.dashboard', 'label' => 'Batismos'],
                                     ['route' => 'cargos', 'label' => 'Cargos'],
                                     ['route' => 'cursos', 'label' => 'Cursos'],
                                     ['route' => 'documentos', 'label' => 'Documentos'],

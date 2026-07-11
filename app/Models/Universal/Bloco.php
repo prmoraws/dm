@@ -6,6 +6,8 @@ use App\Models\Unp\Instrutor;
 use App\Models\Universal\Igreja;
 use App\Models\Universal\Pessoa;
 use App\Models\Universal\Regiao;
+use App\Models\Unp\Presidio;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -31,5 +33,9 @@ class Bloco extends Model
     public function pessoas(): HasMany
     {
         return $this->hasMany(Pessoa::class);
+    }
+    public function presidios(): BelongsToMany
+    {
+        return $this->belongsToMany(Presidio::class, 'bloco_presidio');
     }
 }
