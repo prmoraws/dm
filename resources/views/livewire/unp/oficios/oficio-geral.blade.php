@@ -203,7 +203,7 @@
                                         </div>
                                         <div class="mt-6 space-y-4 text-justify text-sm leading-snug">
                                             <p class="indent-8 pl-8">Com os cumprimentos de estilo, a Universal nos
-                                                Presídios - UNP, vem, através de seu Pastor-Coordenador Geral que a este
+                                                Presídios - UNP, vem, através de seu Coordenador Geral que a este
                                                 subscreve:</p>
                                             <p class="pl-8 font-bold">{!! $selectedOficio->inicio !!}</p>
                                             @if ($selectedOficio->meio)
@@ -212,13 +212,13 @@
                                             @if ($selectedOficio->fim)
                                                 <p class="pl-8 font-bold italic">{!! $selectedOficio->fim !!}</p>
                                             @endif
-                                            <p class="indent-8 pl-8 px-5">Cumpre salientar nossa Instituição continua
+                                            <p class="indent-8 pl-8 px-3">Cumpre salientar nossa Instituição continua
                                                 comprometida a corroborar com os cuidados necessários em que lhe
                                                 compete, contribuindo e atendendo as orientações e determinações da
                                                 Unidade. De plano, registra e reitera protestos de elevada estima e
                                                 consideração. Que o Senhor Deus os abençoe!</p>
                                         </div>
-                                        <div class="mt-16 pb-4 text-center">
+                                        <div class="mt-16 pb-2 text-center">
                                             <p>Atenciosamente,</p>
                                             <div class="inline-block mt-2">
                                                 {{-- CORREÇÃO: Caminho da imagem ajustado --}}

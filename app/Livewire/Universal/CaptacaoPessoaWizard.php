@@ -47,7 +47,7 @@ class CaptacaoPessoaWizard extends Component
         $this->allCategorias = Categoria::orderBy('nome')->get();
         $this->allCargos = Cargo::orderBy('nome')->get();
         $this->allGrupos = Grupo::orderBy('nome')->get();
-        
+
         // Preenche com BA > Salvador por padrão para melhor UX
         $bahia = $this->allEstados->firstWhere('uf', 'BA');
         if ($bahia) {
@@ -86,15 +86,17 @@ class CaptacaoPessoaWizard extends Component
             ],
             5 => [
                 'profissao' => 'nullable|string|max:255',
-                'aptidoes' => 'nullable|string',
-                'conversao' => 'nullable|date',
-                'obra' => 'nullable|date',
-                'trabalho' => 'nullable|array',
+                'aptidoes' => 'required|string',
+                'conversao' => 'required|date',
+                'obra' => 'required|date',
+                'trabalho' => 'required|array|min:1', 
                 'batismo' => 'nullable|array',
-                'preso' => 'nullable|array',
+                // Atualizado: Obrigatório ser um array e ter no mínimo 1 opção selecionada
+                'preso' => 'required|array|min:1', 
             ],
             6 => [
-                'testemunho' => 'nullable|string|min:10',
+                // Atualizado: Obrigatório, mínimo de 50 e máximo de 1000 caracteres
+                'testemunho' => 'required|string|min:50|max:1000',
             ],
             7 => [
                 'assinatura' => 'required',
@@ -114,7 +116,7 @@ class CaptacaoPessoaWizard extends Component
         $this->regiaos = $value ? Regiao::where('bloco_id', $value)->orderBy('nome')->get() : collect();
         $this->reset(['regiao_id', 'igreja_id']);
         $this->igrejas = collect();
-        
+
         $blocoSelecionado = $this->allBlocos->find($value);
         $this->selectedBlocoName = $blocoSelecionado ? $blocoSelecionado->nome : '';
     }
@@ -148,14 +150,14 @@ class CaptacaoPessoaWizard extends Component
             $this->step--;
         }
     }
-    
+
     // CORRIGIDO: Método para salvar assinatura vindo do JavaScript (Livewire v3)
     public function saveSignature($signatureData)
     {
         $this->assinatura = $signatureData;
     }
 
-   
+
     public function submit()
     {
         // A validação completa já está correta, não precisa mexer aqui.
@@ -168,16 +170,38 @@ class CaptacaoPessoaWizard extends Component
             'grupo_id' => $this->selectedBlocoName === 'Catedral' ? 'required|exists:grupos,id' : 'nullable|exists:grupos,id',
             'nome' => 'required|string|min:3|max:255',
             'celular' => 'required|string|max:20',
-            'email' => 'nullable|email|max:255|unique:captacao_pessoas,email',
+            'email' => 'required|email|max:255|unique:captacao_pessoas,email',
             'estado_id' => 'required|exists:estados,id',
             'cidade_id' => 'required|exists:cidades,id',
             'endereco' => 'required|string|max:255',
             'bairro' => 'required|string|max:255',
             'assinatura' => 'required',
+            'obra' => 'required|date',
+            'conversao' => 'required|date',
+            'aptidoes' => 'required|string',
+            'batismo' => 'nullable|array',
+            'preso' => 'required|array|min:1',
+            'testemunho' => 'required|string|min:50|max:1000',
         ]);
-        
+
         try {
-            // ✅ CORRIGIDO: Array $dataToSave agora inclui TODOS os campos do formulário.
+            // ✅ PADRONIZAÇÃO DO NOME: Aplica o formato Title Case (Ex: maria josé -> Maria José)
+            $nomeFormatado = !empty($this->nome) ? Str::title(trim($this->nome)) : null;
+
+            // TRATAMENTO: Evita erros de Unique no e-mail vazio e datas inválidas no MySQL
+            $emailTratado = !empty(trim($this->email)) ? trim($this->email) : null;
+            $conversaoTratada = !empty($this->conversao) ? $this->conversao : null;
+            $obraTratada = !empty($this->obra) ? $this->obra : null;
+
+            // Se o e-mail foi informado, valida a unicidade manualmente antes de tentar inserir
+            if ($emailTratado) {
+                $existeEmail = \App\Models\Universal\CaptacaoPessoa::where('email', $emailTratado)->exists();
+                if ($existeEmail) {
+                    $this->addError('email', 'Este e-mail já está cadastrado em outra solicitação.');
+                    return;
+                }
+            }
+
             $dataToSave = [
                 // Etapa 2: Igreja e Função
                 'bloco_id' => $this->bloco_id,
@@ -188,10 +212,10 @@ class CaptacaoPessoaWizard extends Component
                 'grupo_id' => $this->grupo_id,
 
                 // Etapa 3: Dados Pessoais
-                'nome' => $this->nome,
+                'nome' => $nomeFormatado, // ✅ Utiliza o nome já formatado com letras maiúsculas
                 'celular' => $this->celular,
                 'telefone' => $this->telefone,
-                'email' => $this->email,
+                'email' => $emailTratado,
 
                 // Etapa 4: Endereço
                 'cep' => $this->cep,
@@ -231,9 +255,8 @@ class CaptacaoPessoaWizard extends Component
             CaptacaoPessoa::create($dataToSave);
 
             session()->flash('success', 'Cadastro realizado com sucesso!');
-            
-            $this->step++;
 
+            $this->step++;
         } catch (\Exception $e) {
             Log::error('Erro ao salvar captação de pessoa: ' . $e->getMessage());
             session()->flash('error', 'Ocorreu um erro inesperado ao enviar seu cadastro. Tente novamente.');
@@ -242,7 +265,7 @@ class CaptacaoPessoaWizard extends Component
 
     public function render()
     {
-        
+
         return view('livewire.universal.captacao-pessoa-wizard')->layout('layouts.guest');
     }
 }

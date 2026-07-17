@@ -50,6 +50,13 @@ Route::get('/limpar-tudo', function() {
     return "Cache limpo com sucesso!";
 });
 
+Route::get('/dbinfo', function () {
+    return [
+        'database' => DB::select('select database() as db')[0]->db,
+        'user' => DB::select('select current_user() as user')[0]->user,
+    ];
+});
+
 
 Route::get('/captacao-unp', CaptacaoUnp::class)->name('captacao.unp');
 Route::get('/cadastro-pessoas', CaptacaoPessoaWizard::class)->name('captacao.pessoa.create');

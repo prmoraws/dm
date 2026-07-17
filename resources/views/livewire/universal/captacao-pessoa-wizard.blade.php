@@ -13,9 +13,22 @@
         </div>
 
         <div class="p-6 md:p-8">
+            {{-- 1. Exibe erros de exceção do try-catch --}}
             @if(session()->has('error'))
                 <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded" role="alert">
                     <p>{{ session('error') }}</p>
+                </div>
+            @endif
+
+            {{-- 2. Exibe os erros de validação (NOVO) --}}
+            @if ($errors->any())
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded" role="alert">
+                    <p class="font-bold">Não foi possível finalizar o cadastro. Verifique os erros abaixo:</p>
+                    <ul class="list-disc ml-5 mt-2 text-sm">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
@@ -165,7 +178,7 @@
                         </div>
                         <div>
                             <label for="aptidoes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Aptidões</label>
-                            <input type="text" wire:model.lazy="aptidoes" id="aptidoes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
+                            <input required type="text" wire:model.lazy="aptidoes" id="aptidoes" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                         </div>
                         <div>
                             <label for="conversao" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Data de Conversão</label>
@@ -173,7 +186,7 @@
                         </div>
                         <div>
                             <label for="obra" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Entrada na Obra ou no Grupo </label>
-                            <input type="date" wire:model.lazy="obra" id="obra" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
+                            <input required type="date" wire:model.lazy="obra" id="obra" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm dark:bg-gray-700">
                         </div>
                         <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
                             <div class="space-y-2">
