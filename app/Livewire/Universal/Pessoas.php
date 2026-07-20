@@ -18,10 +18,11 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class Pessoas extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithPagination, WithFileUploads, AuthorizesRequests;
 
     // Propriedades do modelo
     public $pessoa_id, $nome, $celular, $telefone, $email, $endereco, $bairro, $cep, $cidade_id, $estado_id, $profissao, $aptidoes, $conversao, $obra, $testemunho, $bloco_id, $regiao_id, $igreja_id, $categoria_id, $cargo_id, $grupo_id, $foto, $fotoAtual;
@@ -39,9 +40,6 @@ class Pessoas extends Component
     public $allBlocos, $allEstados, $allCategorias, $allCargos, $allGrupos;
 
     // OTIMIZAÇÃO: filtro de bloco da listagem.
-    // Usamos um nome diferente de "bloco_id" (que já existe como campo do
-    // formulário de criação/edição) para não conflitar com o método
-    // updatedBlocoId(), que é disparado pelo select do formulário.
     public $filtro_bloco_id = '';
 
     // OTIMIZAÇÃO: lista de blocos para o filtro, carregada 1x no mount()
@@ -77,8 +75,6 @@ class Pessoas extends Component
         return [
             'nome' => 'required|string|min:3|max:250',
             'celular' => 'required|string|max:20',
-            // CORREÇÃO: Adicionada regra 'unique' para o e-mail
-            // A regra ignora o ID da pessoa atual ao editar, evitando falsos positivos.
             'email' => 'nullable|email|max:250|unique:pessoas,email,' . $this->pessoa_id,
             'endereco' => 'required|string|max:250',
             'bairro' => 'required|string|max:250',
@@ -112,13 +108,9 @@ class Pessoas extends Component
         $this->allCargos = Cargo::orderBy('nome')->get();
         $this->allGrupos = Grupo::orderBy('nome')->get();
 
-        // OTIMIZAÇÃO: o select do filtro usa a mesma coleção já carregada
-        // acima (allBlocos), evitando uma segunda consulta idêntica
-        // (Bloco::orderBy('nome')->get()) só para popular o filtro.
         $this->blocos = $this->allBlocos;
     }
 
-    // ... métodos updated* ...
     public function updatedBlocoId($value)
     {
         $this->regiaos = $value ? Regiao::where('bloco_id', $value)->orderBy('nome')->get() : collect();
@@ -140,44 +132,20 @@ class Pessoas extends Component
         $this->resetPage();
     }
 
-    // OTIMIZAÇÃO: reseta a paginação sempre que o filtro de bloco muda,
-    // assim como já acontece com a busca por nome.
     public function updatedFiltroBlocoId()
     {
         $this->resetPage();
     }
 
-    /**
-     * QUERY OTIMIZADA - EXPLICAÇÃO
-     *
-     * ANTES:
-     * - ->join('blocos', 'pessoas.bloco_id', '=', 'blocos.id') → JOIN permanente
-     *   em toda consulta de listagem, mesmo sem precisar de nenhuma coluna do
-     *   bloco fora do nome (que já vem via relação).
-     * - ->orWhere('blocos.nome', 'like', "%{$term}%") → dependia do JOIN acima.
-     * - ->orderBy('blocos.nome')->orderBy('pessoas.nome') → ordenação composta
-     *   usando uma coluna de outra tabela, sem poder aproveitar um índice
-     *   simples em pessoas.nome.
-     * - LIKE '%texto%' (sem âncora no início) → impede o uso de índice em
-     *   qualquer banco (MySQL/MariaDB incluso), forçando varredura completa.
-     *
-     * DEPOIS:
-     * - Sem JOIN: o nome do bloco é resolvido via eager loading
-     *   ->with(['bloco', 'cargo']), em apenas 2 queries extras (uma por
-     *   relação), independente da quantidade de linhas da página.
-     * - Filtro por bloco direto em pessoas.bloco_id (coluna indexada por ser FK).
-     * - Busca com LIKE 'texto%' (âncora no início), que permite uso de índice
-     *   em pessoas.nome / pessoas.celular quando existente.
-     * - Ordenação único por pessoas.nome.
-     *
-     * RESULTADO: menos joins, menos I/O por linha, queries mais previsíveis
-     * em hospedagem compartilhada com CPU limitada (InfinityFree).
-     */
     public function render()
     {
         $query = Pessoa::query()
             ->select('pessoas.*')
             ->with(['bloco', 'cargo'])
+            // REGRA APLICADA: Se não for do bloco 21 (Admin), só vê o próprio bloco
+            ->when(auth()->user()->bloco_id != 21, function ($query) {
+                $query->where('pessoas.bloco_id', auth()->user()->bloco_id);
+            })
             ->when($this->filtro_bloco_id, function ($query) {
                 $query->where('pessoas.bloco_id', $this->filtro_bloco_id);
             })
@@ -228,8 +196,7 @@ class Pessoas extends Component
             session()->flash('message', $this->pessoa_id ? 'Pessoa atualizada com sucesso.' : 'Pessoa criada com sucesso.');
             $this->closeModal();
         } catch (QueryException $e) {
-            // CORREÇÃO: Captura de erro do banco de dados para feedback amigável
-            if ($e->errorInfo[1] == 1062) { // Código de erro para "Duplicate entry"
+            if ($e->errorInfo[1] == 1062) {
                 $this->errorMessage = 'Não foi possível salvar. O e-mail informado já está em uso.';
             } else {
                 $this->errorMessage = 'Ocorreu um erro de banco de dados ao salvar.';
@@ -245,28 +212,26 @@ class Pessoas extends Component
     {
         try {
             $pessoa = Pessoa::findOrFail($id);
+
+            // POLICY APLICADA AQUI
+            $this->authorize('update', $pessoa);
+
             $this->pessoa_id = $id;
 
-            // CORREÇÃO 1: Usar ->toArray() para preencher o formulário com segurança.
-            // Isso resolve o problema do botão "Atualizar" que não funciona.
             $this->fill($pessoa->toArray());
 
-            // CORREÇÃO 2: Sanitizar os atributos que deveriam ser arrays.
-            // Isso resolve o problema dos checkboxes que marcam tudo.
             $this->trabalho = $this->sanitizeJsonAttribute($pessoa->trabalho);
             $this->batismo = $this->sanitizeJsonAttribute($pessoa->batismo);
             $this->preso = $this->sanitizeJsonAttribute($pessoa->preso);
 
-            // Mantemos a formatação correta das datas
             $this->conversao = $pessoa->conversao ? $pessoa->conversao->format('Y-m-d') : null;
             $this->obra = $pessoa->obra ? $pessoa->obra->format('Y-m-d') : null;
 
-            // O resto do método continua como antes
             $this->regiaos = $pessoa->bloco_id ? Regiao::where('bloco_id', $pessoa->bloco_id)->orderBy('nome')->get() : collect();
             $this->igrejas = $pessoa->regiao_id ? Igreja::where('regiao_id', $pessoa->regiao_id)->orderBy('nome')->get() : collect();
             $this->cidades = $pessoa->estado_id ? Cidade::where('estado_id', $pessoa->estado_id)->orderBy('nome')->get() : collect();
             $this->fotoAtual = $pessoa->foto;
-            $this->foto = null; // Limpa o input de arquivo
+            $this->foto = null;
             $this->isOpen = true;
         } catch (\Exception $e) {
             session()->flash('error', 'Erro ao carregar dados para edição.');
@@ -292,22 +257,37 @@ class Pessoas extends Component
     public function view($id)
     {
         try {
-            $this->selectedPessoa = Pessoa::with(['bloco', 'regiao', 'igreja', 'cidade.estado', 'cargo', 'categoria', 'grupo'])->findOrFail($id);
+            $pessoa = Pessoa::with(['bloco', 'regiao', 'igreja', 'cidade.estado', 'cargo', 'categoria', 'grupo'])->findOrFail($id);
+
+            // POLICY APLICADA AQUI
+            $this->authorize('view', $pessoa);
+
+            $this->selectedPessoa = $pessoa;
             $this->isViewOpen = true;
         } catch (\Exception $e) {
             session()->flash('error', 'Erro ao carregar os detalhes da pessoa.');
             Log::error('Erro ao visualizar pessoa: ' . $e->getMessage());
         }
     }
+
     public function confirmDelete($id)
     {
+        // POLICY APLICADA AQUI ANTES DE ABRIR O MODAL
+        $pessoa = Pessoa::findOrFail($id);
+        $this->authorize('delete', $pessoa);
+
         $this->confirmDeleteId = $id;
     }
+
     public function delete()
     {
         if ($this->confirmDeleteId) {
             try {
                 $pessoa = Pessoa::findOrFail($this->confirmDeleteId);
+
+                // POLICY GARANTIDA AQUI NOVAMENTE
+                $this->authorize('delete', $pessoa);
+
                 if ($pessoa->foto) {
                     Storage::disk('public_disk')->delete($pessoa->foto);
                 }

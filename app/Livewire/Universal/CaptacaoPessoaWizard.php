@@ -73,7 +73,7 @@ class CaptacaoPessoaWizard extends Component
                 'grupo_id' => $this->selectedBlocoName === 'Catedral' ? 'required|exists:grupos,id' : 'nullable|exists:grupos,id',
             ],
             3 => [
-                'nome' => 'required|string|min:3|max:255',
+                'nome' => 'required|string|min:3|max:255|unique:pessoas,nome',
                 'celular' => 'required|string|max:20',
                 'email' => 'nullable|email|max:255|unique:captacao_pessoas,email',
                 'foto' => 'required|image|mimes:jpeg,png,jpg|max:10240',
@@ -168,7 +168,7 @@ class CaptacaoPessoaWizard extends Component
             'categoria_id' => 'required|exists:categorias,id',
             'cargo_id' => 'required|exists:cargos,id',
             'grupo_id' => $this->selectedBlocoName === 'Catedral' ? 'required|exists:grupos,id' : 'nullable|exists:grupos,id',
-            'nome' => 'required|string|min:3|max:255',
+            'nome' => 'required|string|min:3|max:255|unique:pessoas,nome',
             'celular' => 'required|string|max:20',
             'email' => 'required|email|max:255|unique:captacao_pessoas,email',
             'estado_id' => 'required|exists:estados,id',

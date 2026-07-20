@@ -18,6 +18,10 @@ class AuthServiceProvider extends ServiceProvider
         Team::class => TeamPolicy::class,
     ];
 
+    protected $policies = [
+        \App\Models\Universal\Pessoa::class => \App\Policies\PessoaPolicy::class,
+    ];
+
     /**
      * Register any authentication / authorization services.
      */
