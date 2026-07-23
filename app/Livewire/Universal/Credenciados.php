@@ -13,26 +13,23 @@ use App\Models\Universal\Igreja;
 use App\Models\Universal\Regiao;
 use App\Models\Universal\Credenciado;
 use App\Models\Universal\CredencialPresidio;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class Credenciados extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithPagination, WithFileUploads, AuthorizesRequests;
 
-    // Propriedades Básicas (Idênticas ao Pessoas)
     public $credenciado_id, $nome, $celular, $telefone, $email, $endereco, $bairro, $cep, $cidade_id, $estado_id, $profissao, $aptidoes, $conversao, $obra, $testemunho, $bloco_id, $regiao_id, $igreja_id, $categoria_id, $cargo_id, $grupo_id, $foto, $fotoAtual;
 
-    // Documentos de Identidade
     public $identidade_frente, $identidade_verso, $idFrenteAtual, $idVersoAtual;
+    public $credenciais = [];
 
-    // Controle de Credenciais Dinâmicas
-    public $credenciais = []; // Array para armazenar as credenciais temporárias
-
-    // UI e Busca
     public $isOpen = false, $isViewOpen = false, $confirmDeleteId = null, $selectedCredenciado, $search = '', $errorMessage = '';
     public $cidades = [], $regiaos = [], $igrejas = [];
     public $allBlocos, $allEstados, $allCategorias, $allCargos, $allGrupos, $allPresidios;
@@ -47,10 +44,9 @@ class Credenciados extends Component
         $this->allCategorias = Categoria::orderBy('nome')->get();
         $this->allCargos = Cargo::orderBy('nome')->get();
         $this->allGrupos = Grupo::orderBy('nome')->get();
-        $this->allPresidios = Presidio::orderBy('nome')->get(); //
+        $this->allPresidios = Presidio::orderBy('nome')->get();
     }
 
-    // Adiciona um novo bloco de credencial (máximo 10)
     public function addCredencial()
     {
         if (count($this->credenciais) < 10) {
@@ -59,7 +55,9 @@ class Credenciados extends Component
                 'foto_frente' => null,
                 'foto_verso' => null,
                 'foto_frente_atual' => null,
-                'foto_verso_atual' => null
+                'foto_verso_atual' => null,
+                'unidade_nao_faz' => false,
+                'data_vencimento' => null,
             ];
         } else {
             $this->errorMessage = 'Limite de 10 credenciais atingido.';
@@ -77,74 +75,84 @@ class Credenciados extends Component
         $this->resetErrorBag();
         $this->errorMessage = '';
 
-        // 1. Validação dos dados baseada no rules()
+        $user = Auth::user();
+
+        // Se o usuário não for do bloco 21 (Admin), forçamos o bloco_id dele a ser o único permitido ao salvar
+        if ($user->bloco_id != 21) {
+            $this->bloco_id = $user->bloco_id;
+        }
+
         $dataToSave = $this->validate();
 
-        // 2. IMPORTANTE: Removemos os campos de arquivo do array principal para 
-        // evitar que o Eloquent salve "null" sobre os caminhos que já existem no banco.
+        // Se for edição, verificamos explicitamente se o registro pertence ao bloco do usuário
+        if ($this->credenciado_id) {
+            $existing = Credenciado::findOrFail($this->credenciado_id);
+            if ($user->bloco_id != 21 && $existing->bloco_id != $user->bloco_id) {
+                abort(403, 'Ação não autorizada.');
+            }
+        }
+
         unset($dataToSave['foto'], $dataToSave['identidade_frente'], $dataToSave['identidade_verso']);
 
         try {
-            // 3. Tratamento da Foto de Perfil
             if ($this->foto && is_object($this->foto)) {
-                // Se já existe uma foto, apaga o arquivo físico antes de salvar o novo
                 if ($this->credenciado_id && $this->fotoAtual) {
-                    \Illuminate\Support\Facades\Storage::disk('public_disk')->delete($this->fotoAtual);
+                    Storage::disk('public_disk')->delete($this->fotoAtual);
                 }
                 $dataToSave['foto'] = $this->foto->store('credenciados/foto', 'public_disk');
             }
 
-            // 4. Tratamento dos Documentos de Identidade (RG/CNH)
             if ($this->identidade_frente && is_object($this->identidade_frente)) {
                 if ($this->idFrenteAtual) {
-                    \Illuminate\Support\Facades\Storage::disk('public_disk')->delete($this->idFrenteAtual);
+                    Storage::disk('public_disk')->delete($this->idFrenteAtual);
                 }
                 $dataToSave['identidade_frente'] = $this->identidade_frente->store('credenciados/documento', 'public_disk');
             }
 
             if ($this->identidade_verso && is_object($this->identidade_verso)) {
                 if ($this->idVersoAtual) {
-                    \Illuminate\Support\Facades\Storage::disk('public_disk')->delete($this->idVersoAtual);
+                    Storage::disk('public_disk')->delete($this->idVersoAtual);
                 }
                 $dataToSave['identidade_verso'] = $this->identidade_verso->store('credenciados/documento', 'public_disk');
             }
 
-            // 5. Organização dos campos de Checkbox (Arrays)
             $dataToSave['trabalho'] = $this->trabalho ?? [];
             $dataToSave['batismo'] = $this->batismo ?? [];
             $dataToSave['preso'] = $this->preso ?? [];
 
-            // 6. Persistência do Credenciado no Banco de Dados
-            $credenciado = \App\Models\Universal\Credenciado::updateOrCreate(
+            $credenciado = Credenciado::updateOrCreate(
                 ['id' => $this->credenciado_id],
                 $dataToSave
             );
 
-            // 7. Processamento das Credenciais dos Presídios (Relacionamento HasMany)
-            // Limpamos as associações antigas para reinserir as atuais (evita duplicidade na edição)
             if ($this->credenciado_id) {
-                \App\Models\Universal\CredencialPresidio::where('credenciado_id', $this->credenciado_id)->delete();
+                CredencialPresidio::where('credenciado_id', $this->credenciado_id)->delete();
             }
 
             foreach ($this->credenciais as $index => $cred) {
                 if (!empty($cred['presidio_id'])) {
-                    $novaCredencial = new \App\Models\Universal\CredencialPresidio();
+                    $novaCredencial = new CredencialPresidio();
                     $novaCredencial->credenciado_id = $credenciado->id;
                     $novaCredencial->presidio_id = $cred['presidio_id'];
+                    $novaCredencial->unidade_nao_faz = $cred['unidade_nao_faz'] ?? false;
+                    $novaCredencial->data_vencimento = $cred['data_vencimento'] ?? null;
 
-                    // Upload da Frente da Credencial
-                    if (isset($cred['foto_frente']) && is_object($cred['foto_frente'])) {
-                        $novaCredencial->foto_frente = $cred['foto_frente']->store('credenciados/credencial', 'public_disk');
-                    } else {
-                        // Mantém a foto que já existia se não houver upload novo
-                        $novaCredencial->foto_frente = $cred['foto_frente_atual'] ?? null;
-                    }
+                    if (!($cred['unidade_nao_faz'] ?? false)) {
+                        if (isset($cred['foto_frente']) && is_object($cred['foto_frente'])) {
+                            $novaCredencial->foto_frente = $cred['foto_frente']->store('credenciados/credencial', 'public_disk');
+                        } else {
+                            $novaCredencial->foto_frente = $cred['foto_frente_atual'] ?? null;
+                        }
 
-                    // Upload do Verso da Credencial
-                    if (isset($cred['foto_verso']) && is_object($cred['foto_verso'])) {
-                        $novaCredencial->foto_verso = $cred['foto_verso']->store('credenciados/credencial', 'public_disk');
+                        if (isset($cred['foto_verso']) && is_object($cred['foto_verso'])) {
+                            $novaCredencial->foto_verso = $cred['foto_verso']->store('credenciados/credencial', 'public_disk');
+                        } else {
+                            $novaCredencial->foto_verso = $cred['foto_verso_atual'] ?? null;
+                        }
                     } else {
-                        $novaCredencial->foto_verso = $cred['foto_verso_atual'] ?? null;
+                        // Se a unidade não faz, limpamos as fotos salvas anteriormente se houver
+                        $novaCredencial->foto_frente = null;
+                        $novaCredencial->foto_verso = null;
                     }
 
                     $novaCredencial->save();
@@ -154,53 +162,48 @@ class Credenciados extends Component
             session()->flash('message', $this->credenciado_id ? 'Credenciado atualizado com sucesso.' : 'Credenciado cadastrado com sucesso.');
             $this->closeModal();
         } catch (\Illuminate\Database\QueryException $e) {
-            // Trata erro de e-mail duplicado (Código 1062 no MySQL)
             if ($e->errorInfo[1] == 1062) {
                 $this->errorMessage = 'Este e-mail já está em uso por outro registro.';
             } else {
                 $this->errorMessage = 'Erro de banco de dados ao salvar.';
             }
-            \Illuminate\Support\Facades\Log::error('Erro Query Credenciados: ' . $e->getMessage());
+            Log::error('Erro Query Credenciados: ' . $e->getMessage());
         } catch (\Exception $e) {
             $this->errorMessage = 'Ocorreu um erro inesperado: ' . $e->getMessage();
-            \Illuminate\Support\Facades\Log::error('Erro Geral Credenciados: ' . $e->getMessage());
+            Log::error('Erro Geral Credenciados: ' . $e->getMessage());
         }
     }
 
     public function edit($id)
     {
         try {
-            $credenciado = \App\Models\Universal\Credenciado::with('credencialPresidios')->findOrFail($id);
-            $this->credenciado_id = $id;
+            $credenciado = Credenciado::with('credencialPresidios')->findOrFail($id);
 
-            // Preenche os campos básicos
+            // Valida a Policy de segurança
+            $this->authorize('update', $credenciado);
+
+            $this->credenciado_id = $id;
             $this->fill($credenciado->toArray());
 
-            // CORREÇÃO: Carregar as coleções dependentes para os selects funcionarem
-            $this->regiaos = $credenciado->bloco_id ? \App\Models\Universal\Regiao::where('bloco_id', $credenciado->bloco_id)->orderBy('nome')->get() : collect();
-            $this->igrejas = $credenciado->regiao_id ? \App\Models\Universal\Igreja::where('regiao_id', $credenciado->regiao_id)->orderBy('nome')->get() : collect();
-            $this->cidades = $credenciado->estado_id ? \App\Models\Adm\Cidade::where('estado_id', $credenciado->estado_id)->orderBy('nome')->get() : collect();
+            $this->regiaos = $credenciado->bloco_id ? Regiao::where('bloco_id', $credenciado->bloco_id)->orderBy('nome')->get() : collect();
+            $this->igrejas = $credenciado->regiao_id ? Igreja::where('regiao_id', $credenciado->regiao_id)->orderBy('nome')->get() : collect();
+            $this->cidades = $credenciado->estado_id ? Cidade::where('estado_id', $credenciado->estado_id)->orderBy('nome')->get() : collect();
 
-            // Sanitização de Arrays (conforme o padrão Pessoas.php)
             $this->trabalho = $this->sanitizeJsonAttribute($credenciado->trabalho);
             $this->batismo = $this->sanitizeJsonAttribute($credenciado->batismo);
             $this->preso = $this->sanitizeJsonAttribute($credenciado->preso);
 
-            // Datas
             $this->conversao = $credenciado->conversao ? $credenciado->conversao->format('Y-m-d') : null;
             $this->obra = $credenciado->obra ? $credenciado->obra->format('Y-m-d') : null;
 
-            // Fotos atuais
             $this->fotoAtual = $credenciado->foto;
             $this->idFrenteAtual = $credenciado->identidade_frente;
             $this->idVersoAtual = $credenciado->identidade_verso;
 
-            // Limpa os inputs de arquivo
             $this->foto = null;
             $this->identidade_frente = null;
             $this->identidade_verso = null;
 
-            // Carrega credenciais existentes
             $this->credenciais = [];
             foreach ($credenciado->credencialPresidios as $cp) {
                 $this->credenciais[] = [
@@ -208,14 +211,16 @@ class Credenciados extends Component
                     'foto_frente' => null,
                     'foto_verso' => null,
                     'foto_frente_atual' => $cp->foto_frente,
-                    'foto_verso_atual' => $cp->foto_verso
+                    'foto_verso_atual' => $cp->foto_verso,
+                    'unidade_nao_faz' => (bool) $cp->unidade_nao_faz,
+                    'data_vencimento' => $cp->data_vencimento ? $cp->data_vencimento->format('Y-m-d') : null,
                 ];
             }
 
             $this->isOpen = true;
         } catch (\Exception $e) {
             session()->flash('error', 'Erro ao carregar dados.');
-            \Illuminate\Support\Facades\Log::error('Erro ao editar: ' . $e->getMessage());
+            Log::error('Erro ao editar: ' . $e->getMessage());
         }
     }
 
@@ -228,13 +233,20 @@ class Credenciados extends Component
 
     public function render()
     {
-        $results = \App\Models\Universal\Credenciado::with(['igreja', 'credencialPresidios.presidio'])
-            ->where('nome', 'like', '%' . $this->search . '%')
-            ->latest()
-            ->paginate(10);
+        $user = Auth::user();
+
+        $query = Credenciado::with(['igreja', 'credencialPresidios.presidio'])
+            // Restringe rigorosamente para o bloco do usuário logado se ele NÃO for do bloco 21
+            ->when($user->bloco_id != 21, function ($q) use ($user) {
+                $q->where('bloco_id', $user->bloco_id);
+            })
+            ->when($this->search, function ($q) {
+                $q->where('nome', 'like', '%' . $this->search . '%');
+            })
+            ->latest();
 
         return view('livewire.universal.credenciados', [
-            'results' => $results,
+            'results' => $query->paginate(10),
         ]);
     }
 
@@ -247,11 +259,12 @@ class Credenciados extends Component
 
     protected function rules()
     {
-        return [
+        $user = Auth::user();
+
+        $rules = [
             'nome' => 'required|string|min:3|max:250',
             'celular' => 'required|string|max:20',
             'email' => 'nullable|email|max:250|unique:credenciados,email,' . $this->credenciado_id,
-            'bloco_id' => 'required|exists:blocos,id',
             'regiao_id' => 'required|exists:regiaos,id',
             'igreja_id' => 'required|exists:igrejas,id',
             'estado_id' => 'required|exists:estados,id',
@@ -272,48 +285,51 @@ class Credenciados extends Component
             'identidade_frente' => 'nullable|image|max:2048',
             'identidade_verso' => 'nullable|image|max:2048',
         ];
-    }
 
+        // Se for admin (bloco 21), ele pode escolher o bloco no select. Senão, o bloco_id é obrigatório e fixo.
+        if ($user->bloco_id == 21) {
+            $rules['bloco_id'] = 'required|exists:blocos,id';
+        } else {
+            $rules['bloco_id'] = 'nullable';
+        }
+
+        return $rules;
+    }
 
     public function create()
     {
         $this->resetInputFields();
+        // Se não for admin, já fixa o bloco_id do usuário atual ao abrir o modal de criação
+        if (Auth::user()->bloco_id != 21) {
+            $this->bloco_id = Auth::user()->bloco_id;
+        }
         $this->isOpen = true;
     }
 
-    // ADICIONE ESTE MÉTODO ABAIXO
     private function resetInputFields()
     {
-        // Reseta todas as propriedades para o estado inicial
         $this->reset();
-
-        // Recarrega as coleções iniciais (Blocos, Estados, etc)
         $this->mount();
-
-        // Limpa as mensagens de erro de validação
         $this->resetErrorBag();
-
-        // Garante que o array de credenciais comece vazio ou limpo
         $this->credenciais = [];
     }
 
-
     public function updatedBlocoId($value)
     {
-        $this->regiaos = $value ? \App\Models\Universal\Regiao::where('bloco_id', $value)->orderBy('nome')->get() : collect();
+        $this->regiaos = $value ? Regiao::where('bloco_id', $value)->orderBy('nome')->get() : collect();
         $this->reset(['regiao_id', 'igreja_id']);
         $this->igrejas = collect();
     }
 
     public function updatedRegiaoId($value)
     {
-        $this->igrejas = $value ? \App\Models\Universal\Igreja::where('regiao_id', $value)->orderBy('nome')->get() : collect();
+        $this->igrejas = $value ? Igreja::where('regiao_id', $value)->orderBy('nome')->get() : collect();
         $this->reset('igreja_id');
     }
 
     public function updatedEstadoId($value)
     {
-        $this->cidades = $value ? \App\Models\Adm\Cidade::where('estado_id', $value)->orderBy('nome')->get() : collect();
+        $this->cidades = $value ? Cidade::where('estado_id', $value)->orderBy('nome')->get() : collect();
         $this->reset('cidade_id');
     }
 
@@ -322,31 +338,30 @@ class Credenciados extends Component
         $this->resetPage();
     }
 
-    // Método para deletar (como no Pessoas)
     public function confirmDelete($id)
     {
+        $credenciado = Credenciado::findOrFail($id);
+        $this->authorize('delete', $credenciado);
         $this->confirmDeleteId = $id;
     }
 
     public function delete()
     {
         if ($this->confirmDeleteId) {
-            $cred = \App\Models\Universal\Credenciado::find($this->confirmDeleteId);
-            // Lógica de apagar arquivos antes de deletar o registro...
-            $cred->delete();
-            session()->flash('message', 'Registro removido.');
+            $cred = Credenciado::find($this->confirmDeleteId);
+            if ($cred) {
+                $this->authorize('delete', $cred);
+                $cred->delete();
+                session()->flash('message', 'Registro removido.');
+            }
             $this->confirmDeleteId = null;
         }
     }
 
-    /**
-     * Carrega os dados para visualizar os detalhes do credenciado
-     */
     public function view($id)
     {
         try {
-            // Carregamos o credenciado com todas as relações, incluindo as credenciais e presídios
-            $this->selectedCredenciado = \App\Models\Universal\Credenciado::with([
+            $credenciado = Credenciado::with([
                 'bloco',
                 'regiao',
                 'igreja',
@@ -354,19 +369,19 @@ class Credenciados extends Component
                 'cargo',
                 'categoria',
                 'grupo',
-                'credencialPresidios.presidio' // Importante para ver o nome do presídio na lista
+                'credencialPresidios.presidio'
             ])->findOrFail($id);
 
+            $this->authorize('view', $credenciado);
+
+            $this->selectedCredenciado = $credenciado;
             $this->isViewOpen = true;
         } catch (\Exception $e) {
             session()->flash('error', 'Erro ao carregar os detalhes.');
-            \Illuminate\Support\Facades\Log::error('Erro ao visualizar credenciado: ' . $e->getMessage());
+            Log::error('Erro ao visualizar credenciado: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Fecha o modal de visualização
-     */
     public function closeViewModal()
     {
         $this->isViewOpen = false;

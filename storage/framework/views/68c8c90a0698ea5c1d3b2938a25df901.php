@@ -124,6 +124,7 @@
                                 'links' => [
                                     ['route' => 'secretaria.gestao-captacoes', 'label' => 'Gestão de Captações'],
                                     ['route' => 'secretaria.pessoas', 'label' => 'Pessoas'],
+                                    ['route' => 'secretaria.credenciados', 'label' => 'Credenciados'],
                                     ['route' => 'secretaria.gestao-credenciados', 'label' => 'Gestão Credenciados'],
                                 ],
                             ],

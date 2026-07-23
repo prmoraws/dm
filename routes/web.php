@@ -47,7 +47,8 @@ Route::get('/', function () {
 Route::get('/limpar-tudo', function() {
     \Illuminate\Support\Facades\Artisan::call('config:clear');
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    return "Cache limpo com sucesso!";
+    \Illuminate\Support\Facades\Artisan::call('view:clear'); // Adicione esta linha
+    return "Cache e Views limpos com sucesso!";
 });
 
 Route::get('/dbinfo', function () {
@@ -165,6 +166,7 @@ Route::middleware([
     Route::group(['prefix' => 'secretaria', 'middleware' => 'team.access:Secretaria'], function () {
         Route::get('/gestao-captacoes', GestaoCaptacoes::class)->name('secretaria.gestao-captacoes');
         Route::get('/pessoas', Pessoas::class)->name('secretaria.pessoas');
+        Route::get('/credenciados', Credenciados::class)->name('secretaria.credenciados');
         Route::get('/pessoas/{pessoa}/print', [PessoaPrintController::class, 'showFichaVoluntario'])->name('secretaria.pessoas.print.ficha');
         Route::get('/secretaria/gestao-credenciados', GestaoCaptacaoCredenciados::class)->name('secretaria.gestao-credenciados');
         // Você pode adicionar outras rotas da secretaria aqui no futuro

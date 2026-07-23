@@ -17,9 +17,9 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Team::class => TeamPolicy::class,
     ];
-
     protected $policies = [
         \App\Models\Universal\Pessoa::class => \App\Policies\PessoaPolicy::class,
+        \App\Models\Universal\Credenciado::class => \App\Policies\CredenciadoPolicy::class, // <-- ADICIONE ESTA LINHA
     ];
 
     /**

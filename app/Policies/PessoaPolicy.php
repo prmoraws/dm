@@ -20,28 +20,17 @@ class PessoaPolicy
 
     public function view(User $user, Pessoa $pessoa)
     {
-        return $this->checkBlocoAccess($user, $pessoa);
+        // Usando == para flexibilizar a comparação entre string e integer
+        return $user->bloco_id == $pessoa->bloco_id;
     }
 
     public function update(User $user, Pessoa $pessoa)
     {
-        return $this->checkBlocoAccess($user, $pessoa);
+        return $user->bloco_id == $pessoa->bloco_id;
     }
 
     public function delete(User $user, Pessoa $pessoa)
     {
-        return $this->checkBlocoAccess($user, $pessoa);
-    }
-
-    // Método auxiliar para não repetir código
-    private function checkBlocoAccess(User $user, Pessoa $pessoa)
-    {
-        // Se o usuário for editor, ele só acessa os registros do próprio bloco
-        if ($user->hasRole('editor')) {
-            return $user->bloco_id === $pessoa->bloco_id;
-        }
-
-        // Retorne true para outras roles que têm acesso liberado
-        return true;
+        return $user->bloco_id == $pessoa->bloco_id;
     }
 }

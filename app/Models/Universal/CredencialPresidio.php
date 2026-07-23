@@ -8,10 +8,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CredencialPresidio extends Model
 {
     protected $fillable = [
-        'credenciado_id', 
-        'presidio_id', 
-        'foto_frente', 
-        'foto_verso'
+        'credenciado_id',
+        'presidio_id',
+        'foto_frente',
+        'foto_verso',
+        'unidade_nao_faz', // Novo campo booleano ou integer
+        'data_vencimento'   // Novo campo de data
+    ];
+
+    protected $casts = [
+        'unidade_nao_faz' => 'boolean',
+        'data_vencimento' => 'date',
     ];
 
     public function credenciado(): BelongsTo
