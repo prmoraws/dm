@@ -28,3 +28,30 @@ Thumbs.db
 if0_38241904_moraw.sql
 id_rsa
 id_rsa.ppk
+# Metadados criados pelo Windows
+*:Zone.Identifier
+
+# Diagnósticos locais
+/diagnostico-git-*.txt
+
+# Fotos e uploads reais do Cadastro TDA
+/public/tda/
+
+# Arquivos temporários do Livewire
+/storage/app/private/livewire-tmp/
+
+# Arquivos gerados pelo Laravel
+/storage/framework/cache/data/
+/storage/framework/sessions/
+/storage/framework/views/
+
+# Bancos e SQL locais
+/bkup.sql
+/if0_*.sql
+/xtras/cadastro_tda_manual.sql
+
+# Pacotes e backups
+/*.zip
+/*.patch
+/*.backup
+/*.backup-*

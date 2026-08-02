@@ -1,0 +1,2 @@
+@props(['campo', 'rotulo', 'obrigatorio' => false])
+<div wire:key="tda-field-{{ $campo }}"><label for="tda-{{ $campo }}" class="mb-1 block text-sm font-semibold text-gray-700">{{ $rotulo }} @if($obrigatorio)<span class="text-red-600">*</span>@endif</label><select id="tda-{{ $campo }}" name="{{ $campo }}" wire:model.live="{{ $campo }}" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-red-600 focus:ring-red-600">{{ $slot }}</select>@error($campo)<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror</div>

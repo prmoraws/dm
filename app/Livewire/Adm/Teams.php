@@ -79,9 +79,13 @@ class Teams extends Component
 
             // 2. Garante que o Dono também exista na tabela de permissões (`team_user`) com a role de admin
             $owner = User::find($this->owner_id);
-            if ($owner && !$owner->belongsToTeam($team)) {
-                // Se ele não fazia parte do time, nós o anexamos
-                $owner->teams()->attach($team, ['role' => 'admin']);
+            if ($owner) {
+                // O Jetstream considera o proprietário membro mesmo sem pivot.
+                // Gravamos/atualizamos explicitamente o pivot para manter a
+                // tabela team_user coerente e a função administrativa visível.
+                $owner->teams()->syncWithoutDetaching([
+                    $team->id => ['role' => 'admin'],
+                ]);
             }
 
             DB::commit();

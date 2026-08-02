@@ -2,28 +2,46 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="darkMode ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark')">
 
 <head>
+    @php
+        $cadastroTdaPublico = request()->routeIs('captacao.tda.create');
+        $tituloSocial = $cadastroTdaPublico ? 'Cadastro TDA | Terapia do Amor' : 'Cadastro UNP';
+        $descricaoSocial = $cadastroTdaPublico
+            ? 'Preencha sua ficha de cadastro como voluntário dos Auxiliares da Terapia do Amor na Bahia.'
+            : 'Cadastro de pessoas da Universal nos Presídios da Bahia.';
+        $urlSocial = $cadastroTdaPublico ? route('captacao.tda.create') : url()->current();
+        $imagemSocial = $cadastroTdaPublico
+            ? url('/public/images/tda/tda-compartilhamento.png')
+            : url('/images/cadastro-unp.jpg');
+    @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>MW | @yield('title')</title>
+    <title>{{ $tituloSocial }}</title>
     <link rel="icon"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='currentColor' viewBox='0 0 440 376'%3E%3Cpath d='M 56.53 6.41 h 152.93 v 366.88 L 70.37 178.11 h 62.28 l 33.07 45.89 V 69.06 H 74.71 l -9.85 13.81 L 87.53 115.2 l -62.43 0.5 L 2 84 z' style='fill:%2399f'/%3E%3Cpath d='M229.93 6.29h152.83l54.2 76.26-72.48 101.38-0.18-87.61 9.85-13.31-9.67-13.81-23.22-0.25-0.35 148.54-43.63 61.17-1.76-206.77H271.3l1.05 239.85-45.03 61.17z' style='fill:%2399f;fill-opacity:.811765'/%3E%3C/svg%3E"
         sizes="any" type="image/svg+xml">
-    <meta name="description"
-        content="Aplicação web desenvolvida por J.M.Moraes, utilizando Laravel, Livewire e Tailwind CSS. Solução eficiente para gestão.">
+    <meta name="description" content="{{ $descricaoSocial }}">
     <meta name="keywords" content="moraw, laravel, livewire, tailwind, aplicação web, desenvolvimento web, Moraes">
     <meta name="author" content="J.M.Moraes">
 
-    <!-- Open Graph (Redes Sociais) -->
-    <meta property="og:title" content="Moraw | Aplicação Web Moderna">
-    <meta property="og:description" content="Desenvolvida com Laravel e Livewire para gestão privada.">
+    <!-- Open Graph (WhatsApp, Facebook e outras redes sociais) -->
+    <meta property="og:title" content="{{ $tituloSocial }}">
+    <meta property="og:description" content="{{ $descricaoSocial }}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://domo.free.nf/cadastro-pessoas">
-    <meta property="og:title" content="Cadastro UNP">
-    <meta property="og:description" content="Cadastro de pessoas da Universal nos Presídios da Bahia.">
-    <meta property="og:image" content="https://domo.free.nf/images/cadastro-unp.jpg">
-    <meta property="og:site_name" content="Cadastro UNP">
+    <meta property="og:url" content="{{ $urlSocial }}">
+    <meta property="og:image" content="{{ $imagemSocial }}">
+    <meta property="og:image:secure_url" content="{{ $imagemSocial }}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{{ $tituloSocial }}">
+    <meta property="og:site_name" content="Terapia do Amor">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $tituloSocial }}">
+    <meta name="twitter:description" content="{{ $descricaoSocial }}">
+    <meta name="twitter:image" content="{{ $imagemSocial }}">
+    <link rel="canonical" href="{{ $urlSocial }}">
     <link rel="icon"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='currentColor' viewBox='0 0 440 376'%3E%3Cpath d='M 56.53 6.41 h 152.93 v 366.88 L 70.37 178.11 h 62.28 l 33.07 45.89 V 69.06 H 74.71 l -9.85 13.81 L 87.53 115.2 l -62.43 0.5 L 2 84 z' style='fill:%2399f'/%3E%3Cpath d='M229.93 6.29h152.83l54.2 76.26-72.48 101.38-0.18-87.61 9.85-13.31-9.67-13.81-23.22-0.25-0.35 148.54-43.63 61.17-1.76-206.77H271.3l1.05 239.85-45.03 61.17z' style='fill:%2399f;fill-opacity:.811765'/%3E%3C/svg%3E"
         sizes="any" type="image/svg+xml">
@@ -90,5 +108,4 @@
 </body>
 
 </html>
-
 

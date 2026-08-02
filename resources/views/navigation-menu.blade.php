@@ -5,7 +5,7 @@
             <div class="flex items-center">
                 {{-- O logo já é o link para o Dashboard --}}
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 group">
+                    <a href="{{ strtolower((string) Auth::user()->currentTeam?->name) === 'tda' ? route('tda.dashboard') : route('dashboard') }}" class="flex items-center space-x-2 group">
                         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="30" viewBox="0 0 440 376"
                             class="transition-transform duration-300 group-hover:scale-110">
                             <path
@@ -86,7 +86,16 @@
                                     ['route' => 'universal.pessoas', 'label' => 'Pessoas'],
                                     ['route' => 'universal.credenciados', 'label' => 'Credenciados'],
                                     ['route' => 'regiaos', 'label' => 'Regiões'],
-                                    ['route' => 'regiaos', 'label' => 'Regiões'],
+                                ],
+                            ],
+                            'TDA' => [
+                                'teams' => ['TDA', 'Adm'],
+                                'active' => request()->routeIs('tda.*', 'universal.cadastros-tda*', 'secretaria.gestao-captacoes-tda*'),
+                                'icon' => '<svg class="h-5 w-8" viewBox="0 0 64 24" fill="currentColor"><text x="1" y="18" font-size="18" font-weight="800">TDA</text></svg>',
+                                'links' => [
+                                    ['route' => 'tda.dashboard', 'label' => 'Dashboard'],
+                                    ['route' => 'universal.cadastros-tda', 'label' => 'Cadastros aprovados'],
+                                    ['route' => 'secretaria.gestao-captacoes-tda', 'label' => 'Gestão de captações'],
                                 ],
                             ],
                             'Eventos' => [
@@ -152,8 +161,9 @@
 
                     @foreach ($menus as $name => $menu)
                         @if (
-                            !isset($menu['team']) ||
-                                Auth::user()->currentTeam->name === $menu['team'] ||
+                            (!isset($menu['team']) && !isset($menu['teams'])) ||
+                                (isset($menu['team']) && Auth::user()->currentTeam->name === $menu['team']) ||
+                                (isset($menu['teams']) && in_array(Auth::user()->currentTeam->name, $menu['teams'], true)) ||
                                 Auth::user()->currentTeam->name === 'Adm')
                             <div class="relative group h-full flex items-center" x-data="{ open: false }"
                                 @mouseenter="open = true" @mouseleave="open = false">
@@ -184,7 +194,7 @@
                                         @foreach ($menu['links'] as $link)
                                             @if ($link['is_divider'] ?? false)
                                                 <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-                                            @else
+                                            @elseif (!isset($link['teams']) || in_array(Auth::user()->currentTeam->name, $link['teams'], true) || Auth::user()->currentTeam->name === 'Adm')
                                                 <x-dropdown-link
                                                     href="{{ route($link['route'], $link['params'] ?? []) }}">{{ $link['label'] }}</x-dropdown-link>
                                             @endif
@@ -270,15 +280,16 @@
 
             @foreach ($menus as $name => $menu)
                 @if (
-                    !isset($menu['team']) ||
-                        Auth::user()->currentTeam->name === $menu['team'] ||
+                    (!isset($menu['team']) && !isset($menu['teams'])) ||
+                        (isset($menu['team']) && Auth::user()->currentTeam->name === $menu['team']) ||
+                        (isset($menu['teams']) && in_array(Auth::user()->currentTeam->name, $menu['teams'], true)) ||
                         Auth::user()->currentTeam->name === 'Adm')
                     <div x-data="{ subMenuOpen: {{ $menu['active'] ? 'true' : 'false' }} }" class="py-1 border-t border-gray-200 dark:border-gray-700">
                         <button @click="subMenuOpen = !subMenuOpen"
                             class="w-full flex justify-between items-center px-4 py-2 text-base font-medium rounded-md transition-colors duration-150 {{ $menu['active'] ? 'text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800' : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                             <span class="flex items-center gap-2">{!! $menu['icon'] !!} {{ $name }}</span>
                             <svg class="h-5 w-5 transform transition-transform duration-300"
-                                :class="{ 'rotate-180': subMenuOpen }" fill="none" viewBox="0 0 24"
+                                :class="{ 'rotate-180': subMenuOpen }" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7" />
@@ -286,7 +297,7 @@
                         </button>
                         <div x-show="subMenuOpen" class="pl-4 mt-1 space-y-1 overflow-hidden">
                             @foreach ($menu['links'] as $link)
-                                @if (!($link['is_divider'] ?? false))
+                                @if (!($link['is_divider'] ?? false) && (!isset($link['teams']) || in_array(Auth::user()->currentTeam->name, $link['teams'], true) || Auth::user()->currentTeam->name === 'Adm'))
                                     <x-responsive-nav-link href="{{ route($link['route'], $link['params'] ?? []) }}"
                                         :active="request()->routeIs($link['route'])">{{ $link['label'] }}</x-responsive-nav-link>
                                 @endif
