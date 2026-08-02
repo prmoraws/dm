@@ -18,10 +18,10 @@ use App\Livewire\Universal\Dashboard as UniversalDashboard;
 use App\Livewire\Unp\Dashboard as UnpDashboard;
 use App\Livewire\Evento\{Entregas, Instituicoes, Terreiros};
 use App\Livewire\Universal\{Banners, Blocos, Categorias, Pastores, PastorUnp, CarroUnp, Pessoas, Regiaos, Igrejas, GestaoCaptacoes};
-use App\Http\Controllers\Universal\PastorUnpPrintController;
+use App\Http\Controllers\Universal\{PastorUnpPrintController, CadastroTdaPdfController};
 use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos, DashboardBatismo};
 use App\Livewire\Unp\Oficios\{Anexos, Convidados, DadosCurso, InformacaoCurso, ListaCertificado, OficioCredencial, OficioEvento, OficioFormatura, OficioGeral, OficioTrabalho, OficioCop, OficioCurso, Reeducandos};
-use App\Livewire\Universal\{CaptacaoUnp, Credenciados, CaptacaoCredenciadoWizard, GestaoCaptacaoCredenciados, CaptacaoSucesso, EdicaoCarroPublica};
+use App\Livewire\Universal\{CaptacaoUnp, Credenciados, CaptacaoCredenciadoWizard, GestaoCaptacaoCredenciados, CaptacaoSucesso, EdicaoCarroPublica, CaptacaoTdaWizard, GestaoCaptacoesTda, CadastrosTda, TdaDashboard};
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\File;
 use App\Livewire\Adm\Users as UserManagement;
@@ -37,6 +37,7 @@ use App\Livewire\Politica\EspelhoManager;
 use App\Http\Controllers\Universal\PessoaPrintController;
 use Illuminate\Support\Facades\Artisan;
 use App\Livewire\Unp\FormularioBatismo;
+
 
 
 
@@ -66,6 +67,8 @@ Route::get('/captacao/sucesso', CaptacaoSucesso::class)->name('captacao.sucesso'
 Route::get('/carro/editar-veiculo', EdicaoCarroPublica::class)->name('carro.public.edit');
 Route::get('/batismo', FormularioBatismo::class)->name('batismo.publico');
 
+Route::get('/cadastro-tda', CaptacaoTdaWizard::class)->name('captacao.tda.create');
+
 
 Route::middleware([
     'auth:sanctum',
@@ -75,6 +78,10 @@ Route::middleware([
 
     // Rota padrão do dashboard do Jetstream
     Route::get('/dashboard', function () {
+        if (strtolower((string) auth()->user()?->currentTeam?->name) === 'tda') {
+            return redirect()->route('tda.dashboard');
+        }
+
         return view('dashboard');
     })->name('dashboard');
 
@@ -122,6 +129,19 @@ Route::middleware([
         Route::get('/dashboard', UniversalDashboard::class)->name('dashboard.uni');
         Route::get('/universal/credenciados', Credenciados::class)->name('universal.credenciados');
         // ... adicione todas as outras rotas 'universal' aqui
+    });
+
+    // Rotas exclusivas do time Terapia do Amor. O time Adm continua liberado
+    // automaticamente pelo middleware CheckTeamAccess.
+    Route::group(['prefix' => 'tda', 'middleware' => 'team.access:TDA'], function () {
+        Route::get('/dashboard', TdaDashboard::class)->name('tda.dashboard');
+        Route::get('/cadastros', CadastrosTda::class)->name('universal.cadastros-tda');
+        Route::get('/cadastros/{cadastroTda}/pdf', [CadastroTdaPdfController::class, 'visualizar'])
+            ->name('universal.cadastros-tda.pdf.visualizar');
+        Route::get('/cadastros/{cadastroTda}/pdf/baixar', [CadastroTdaPdfController::class, 'baixar'])
+            ->name('universal.cadastros-tda.pdf.baixar');
+        Route::get('/gestao-captacoes', GestaoCaptacoesTda::class)
+            ->name('secretaria.gestao-captacoes-tda');
     });
 
     // Rotas do Grupo Eventos
