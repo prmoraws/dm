@@ -8,7 +8,10 @@ use App\Models\Universal\Bloco;
 use App\Models\Universal\CaptacaoTda;
 use App\Models\Universal\Igreja;
 use App\Models\Universal\Regiao;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -58,30 +61,64 @@ class CaptacaoTdaWizard extends Component
             1 => ['lgpd_aceito' => ['accepted']],
             2 => [
                 'bloco_id' => ['required', 'exists:blocos,id'],
-                'regiao_id' => ['required', 'exists:regiaos,id'],
-                'igreja_id' => ['required', 'exists:igrejas,id'],
-                'data_ingresso_grupo' => ['required', 'date', 'before_or_equal:today'],
+                'regiao_id' => [
+                    'required',
+                    Rule::exists('regiaos', 'id')->where(
+                        fn ($query) => $query->where('bloco_id', $this->bloco_id)
+                    ),
+                ],
+                'igreja_id' => [
+                    'required',
+                    Rule::exists('igrejas', 'id')->where(
+                        fn ($query) => $query->where('regiao_id', $this->regiao_id)
+                    ),
+                ],
+                'data_ingresso_grupo' => ['nullable', 'date', 'before_or_equal:today'],
                 'funcao_grupo' => ['required', 'string', 'max:255'],
             ],
             3 => [
                 'nome' => ['required', 'string', 'min:3', 'max:255'],
                 'data_nascimento' => ['required', 'date', 'before:today'],
                 'estado_civil' => ['required', Rule::in(['solteiro', 'casado', 'divorciado', 'viuvo', 'uniao_estavel'])],
-                'rg' => ['required', 'string', 'max:30'],
-                'cpf' => ['required', 'string', 'max:20'],
+                'rg' => ['nullable', 'string', 'max:30'],
+                'cpf' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    function (string $attribute, mixed $value, \Closure $fail): void {
+                        if (! $this->cpfValido((string) $value)) {
+                            $fail('Informe um CPF válido.');
+                        }
+                    },
+                ],
                 'sexo' => ['required', Rule::in(['feminino', 'masculino'])],
                 'foto' => ['required', 'image', 'mimes:jpeg,jpg,png', 'max:5120'],
             ],
             4 => [
-                'celular' => ['required', 'string', 'max:20'],
+                'celular' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    function (string $attribute, mixed $value, \Closure $fail): void {
+                        $numero = preg_replace('/\D+/', '', (string) $value);
+                        if (! in_array(strlen($numero), [10, 11], true)) {
+                            $fail('Informe um celular com DDD válido.');
+                        }
+                    },
+                ],
                 'email' => ['nullable', 'email', 'max:255'],
                 'facebook' => ['nullable', 'string', 'max:255'],
                 'instagram' => ['nullable', 'string', 'max:255'],
                 'estado_id' => ['required', 'exists:estados,id'],
-                'cidade_id' => ['required', 'exists:cidades,id'],
+                'cidade_id' => [
+                    'required',
+                    Rule::exists('cidades', 'id')->where(
+                        fn ($query) => $query->where('estado_id', $this->estado_id)
+                    ),
+                ],
                 'endereco' => ['required', 'string', 'max:255'],
                 'numero' => ['required', 'string', 'max:30'],
-                'cep' => ['required', 'string', 'max:10'],
+                'cep' => ['nullable', 'string', 'max:10'],
                 'bairro' => ['required', 'string', 'max:255'],
             ],
             5 => [
@@ -91,7 +128,17 @@ class CaptacaoTdaWizard extends Component
                 'quantidade_filhos' => ['nullable', 'required_if:tem_filhos,1', 'integer', 'min:1', 'max:30'],
                 'idade_filhos' => ['nullable', 'required_if:tem_filhos,1', 'string', 'max:255'],
                 'emergencia_nome' => ['required', 'string', 'max:255'],
-                'emergencia_celular' => ['required', 'string', 'max:20'],
+                'emergencia_celular' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    function (string $attribute, mixed $value, \Closure $fail): void {
+                        $numero = preg_replace('/\D+/', '', (string) $value);
+                        if (! in_array(strlen($numero), [10, 11], true)) {
+                            $fail('Informe um celular de emergência com DDD válido.');
+                        }
+                    },
+                ],
                 'emergencia_facebook' => ['nullable', 'string', 'max:255'],
                 'emergencia_instagram' => ['nullable', 'string', 'max:255'],
             ],
@@ -189,6 +236,13 @@ class CaptacaoTdaWizard extends Component
     {
         if ($this->step !== 9 || $this->enviado) return;
 
+        $limiteChave = 'captacao-tda:envio:'.request()->ip();
+        if (RateLimiter::tooManyAttempts($limiteChave, 3)) {
+            $segundos = RateLimiter::availableIn($limiteChave);
+            session()->flash('error', "Muitas tentativas. Aguarde {$segundos} segundos e tente novamente.");
+            return;
+        }
+
         for ($etapa = 1; $etapa <= 8; $etapa++) {
             $this->step = $etapa;
             $this->validate();
@@ -197,12 +251,16 @@ class CaptacaoTdaWizard extends Component
 
         $cpf = preg_replace('/\D+/', '', (string) $this->cpf);
         $celular = preg_replace('/\D+/', '', (string) $this->celular);
+        RateLimiter::hit($limiteChave, 15 * 60);
+
         if (CaptacaoTda::where('status', 'pendente')->where(function ($q) use ($cpf, $celular) {
             $q->where('cpf', $cpf)->orWhere('celular', $celular);
         })->exists()) {
             $this->addError('cpf', 'Já existe uma solicitação pendente com este CPF ou celular.');
             return;
         }
+
+        $fotoArmazenada = null;
 
         try {
             $dados = [];
@@ -216,7 +274,8 @@ class CaptacaoTdaWizard extends Component
             $dados['celular'] = $celular;
             $dados['email'] = filled($this->email) ? Str::lower(trim($this->email)) : null;
             $dados['status'] = 'pendente';
-            $dados['foto'] = $this->foto->store('tda/captacao', 'public_disk');
+            $fotoArmazenada = $this->foto->store('tda/captacao', 'public_disk');
+            $dados['foto'] = $fotoArmazenada;
 
             if ($this->sexo === 'feminino') {
                 $dados['intellimen_reunioes'] = $dados['intellimen_desafios'] = null;
@@ -224,9 +283,13 @@ class CaptacaoTdaWizard extends Component
                 $dados['godllywood_autoajuda'] = $dados['meditacao_univer'] = null;
             }
 
-            CaptacaoTda::create($dados);
+            DB::transaction(fn () => CaptacaoTda::create($dados));
             $this->enviado = true;
         } catch (\Throwable $e) {
+            if ($fotoArmazenada) {
+                Storage::disk('public_disk')->delete($fotoArmazenada);
+            }
+
             Log::error('Erro no cadastro público TDA', [
                 'tipo' => $e::class,
                 'mensagem' => $e->getMessage(),
@@ -238,6 +301,29 @@ class CaptacaoTdaWizard extends Component
     private function diasValidos(): array
     {
         return ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+    }
+
+    private function cpfValido(string $cpf): bool
+    {
+        $cpf = preg_replace('/\D+/', '', $cpf);
+
+        if (strlen($cpf) !== 11 || preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+
+        for ($digito = 9; $digito < 11; $digito++) {
+            $soma = 0;
+            for ($indice = 0; $indice < $digito; $indice++) {
+                $soma += ((int) $cpf[$indice]) * (($digito + 1) - $indice);
+            }
+
+            $verificador = ((10 * $soma) % 11) % 10;
+            if ((int) $cpf[$digito] !== $verificador) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function render()

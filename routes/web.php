@@ -45,20 +45,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/limpar-tudo', function() {
-    \Illuminate\Support\Facades\Artisan::call('config:clear');
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    \Illuminate\Support\Facades\Artisan::call('view:clear'); // Adicione esta linha
-    return "Cache e Views limpos com sucesso!";
-});
-
-Route::get('/dbinfo', function () {
-    return [
-        'database' => DB::select('select database() as db')[0]->db,
-        'user' => DB::select('select current_user() as user')[0]->user,
-    ];
-});
-
 
 Route::get('/captacao-unp', CaptacaoUnp::class)->name('captacao.unp');
 Route::get('/cadastro-pessoas', CaptacaoPessoaWizard::class)->name('captacao.pessoa.create');

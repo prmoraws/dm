@@ -1,4 +1,4 @@
-<nav x-data="{ open: false, darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="darkMode ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark')"
+<nav x-data="{ open: false, areasOpen: false, darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="document.documentElement.classList.toggle('dark', darkMode)"
     class="bg-white dark:bg-gray-900/80 dark:backdrop-blur-sm border-b border-gray-200 dark:border-gray-700/50 fixed top-0 w-full z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -15,11 +15,12 @@
                                 d="M229.93 6.29h152.83l54.2 76.26-72.48 101.38-0.18-87.61 9.85-13.31-9.67-13.81-23.22-0.25-0.35 148.54-43.63 61.17-1.76-206.77H271.3l1.05 239.85-45.03 61.17z"
                                 fill="#2563EB" class="dark:fill-blue-400" />
                         </svg>
-                        <span
-                            class="text-xl font-semibold text-gray-900 dark:text-gray-100 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400"></span>
-                        {{-- ADICIONE ESTA LINHA PARA TESTAR --}}
-                        <span class="ml-4 text-red-500 font-bold">Time Atual:
-                            {{ Auth::user()->currentTeam->name }}</span> {{-- Aqui o título --}}
+                        <span class="hidden sm:inline text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            Painel
+                        </span>
+                        <span class="hidden md:inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                            {{ Auth::user()->currentTeam->name }}
+                        </span>
                     </a>
                 </div>
             </div>
@@ -91,7 +92,7 @@
                             'TDA' => [
                                 'teams' => ['TDA', 'Adm'],
                                 'active' => request()->routeIs('tda.*', 'universal.cadastros-tda*', 'secretaria.gestao-captacoes-tda*'),
-                                'icon' => '<svg class="h-5 w-8" viewBox="0 0 64 24" fill="currentColor"><text x="1" y="18" font-size="18" font-weight="800">TDA</text></svg>',
+                                'icon' => '<img class="h-6 w-10 object-contain dark:brightness-0 dark:invert" src="' . asset('images/tda/tda-logo.svg') . '" alt="">',
                                 'links' => [
                                     ['route' => 'tda.dashboard', 'label' => 'Dashboard'],
                                     ['route' => 'universal.cadastros-tda', 'label' => 'Cadastros aprovados'],
@@ -159,51 +160,58 @@
                         ];
                     @endphp
 
-                    @foreach ($menus as $name => $menu)
-                        @if (
-                            (!isset($menu['team']) && !isset($menu['teams'])) ||
-                                (isset($menu['team']) && Auth::user()->currentTeam->name === $menu['team']) ||
-                                (isset($menu['teams']) && in_array(Auth::user()->currentTeam->name, $menu['teams'], true)) ||
-                                Auth::user()->currentTeam->name === 'Adm')
-                            <div class="relative group h-full flex items-center" x-data="{ open: false }"
-                                @mouseenter="open = true" @mouseleave="open = false">
-                                <button
-                                    class="px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors {{ $menu['active'] ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400' }}">
-                                    {!! $menu['icon'] !!}
-                                    <span>{{ $name }}</span>
-                                    <svg class="ml-1 h-4 w-4 transform transition-transform duration-200"
-                                        :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24"
-                                        stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
+                    <div class="relative">
+                        <button type="button" @click="areasOpen = !areasOpen" :aria-expanded="areasOpen"
+                            class="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-blue-600 dark:hover:bg-gray-700">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h6v6H4V6zm10 0h6v6h-6V6zM4 16h6v4H4v-4zm10 0h6v4h-6v-4z" />
+                            </svg>
+                            <span>Áreas</span>
+                            <svg class="h-4 w-4 transition-transform" :class="{ 'rotate-180': areasOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
 
-                                <span
-                                    class="absolute bottom-0 left-0 h-0.5 bg-blue-600 dark:bg-blue-400 transition-all duration-300 {{ $menu['active'] ? 'w-full' : 'w-0' }} group-hover:w-full"></span>
-
-                                <div x-show="open" x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="opacity-0 translate-y-2"
-                                    x-transition:enter-end="opacity-100 translate-y-0"
-                                    x-transition:leave="transition ease-in duration-150"
-                                    x-transition:leave-start="opacity-100 translate-y-0"
-                                    x-transition:leave-end="opacity-0 translate-y-2"
-                                    class="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-md shadow-lg z-50 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5"
-                                    style="display: none;">
-                                    <div class="py-1">
-                                        @foreach ($menu['links'] as $link)
-                                            @if ($link['is_divider'] ?? false)
-                                                <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
-                                            @elseif (!isset($link['teams']) || in_array(Auth::user()->currentTeam->name, $link['teams'], true) || Auth::user()->currentTeam->name === 'Adm')
-                                                <x-dropdown-link
-                                                    href="{{ route($link['route'], $link['params'] ?? []) }}">{{ $link['label'] }}</x-dropdown-link>
-                                            @endif
-                                        @endforeach
-                                    </div>
+                        <div x-cloak x-show="areasOpen" @click.outside="areasOpen = false" @keydown.escape.window="areasOpen = false"
+                            x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+                            class="fixed inset-x-4 top-16 z-50 mx-auto max-h-[calc(100vh-5rem)] max-w-6xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+                            style="display: none;">
+                            <div class="mb-4 flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Navegação</p>
+                                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Áreas de trabalho</h2>
                                 </div>
+                                <button type="button" @click="areasOpen = false" class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Fechar menu">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
                             </div>
-                        @endif
-                    @endforeach
+                            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                @foreach ($menus as $name => $menu)
+                                    @if (
+                                        (!isset($menu['team']) && !isset($menu['teams'])) ||
+                                            (isset($menu['team']) && Auth::user()->currentTeam->name === $menu['team']) ||
+                                            (isset($menu['teams']) && in_array(Auth::user()->currentTeam->name, $menu['teams'], true)) ||
+                                            Auth::user()->currentTeam->name === 'Adm')
+                                        <section class="rounded-xl border p-3 {{ $menu['active'] ? 'border-blue-300 bg-blue-50/70 dark:border-blue-700 dark:bg-blue-950/30' : 'border-gray-200 dark:border-gray-700' }}">
+                                            <div class="mb-2 flex items-center gap-2 font-semibold {{ $menu['active'] ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-white' }}">
+                                                {!! $menu['icon'] !!}<span>{{ $name }}</span>
+                                            </div>
+                                            <div class="space-y-1">
+                                                @foreach ($menu['links'] as $link)
+                                                    @if (!($link['is_divider'] ?? false) && (!isset($link['teams']) || in_array(Auth::user()->currentTeam->name, $link['teams'], true) || Auth::user()->currentTeam->name === 'Adm'))
+                                                        <a @click="areasOpen = false" href="{{ route($link['route'], $link['params'] ?? []) }}"
+                                                            class="block rounded-lg px-3 py-2 text-sm text-gray-600 transition hover:bg-white hover:text-blue-700 hover:shadow-sm dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-blue-300">
+                                                            {{ $link['label'] }}
+                                                        </a>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        </section>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex items-center ml-3">
@@ -212,7 +220,7 @@
                             @click="
             darkMode = !darkMode;
             document.documentElement.classList.toggle('dark', darkMode);
-            localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+            localStorage.setItem('darkMode', darkMode);
         "
                             class="text-gray-600 dark:text-gray-300 hover:text-primary transition"
                             title="Alternar modo escuro">

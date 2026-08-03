@@ -144,7 +144,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Cadastro público de usuários desabilitado. Contas são gerenciadas pelo administrador.
         Features::resetPasswords(),
         // Features::emailVerification(),
         Features::updateProfileInformation(),

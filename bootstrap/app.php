@@ -12,9 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
           health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // ... outros middlewares podem estar aqui
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
-        // Adicione seu alias de middleware aqui
         $middleware->alias([
             'team.access' => \App\Http\Middleware\CheckTeamAccess::class,
         ]);

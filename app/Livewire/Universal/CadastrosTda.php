@@ -70,9 +70,9 @@ class CadastrosTda extends Component
         $sexo=data_get($this->form,'sexo');
         return [
             'form.bloco_id'=>['required','exists:blocos,id'],'form.regiao_id'=>['required',Rule::exists('regiaos','id')->where('bloco_id',data_get($this->form,'bloco_id'))],'form.igreja_id'=>['required',Rule::exists('igrejas','id')->where('regiao_id',data_get($this->form,'regiao_id'))],'form.estado_id'=>['required','exists:estados,id'],'form.cidade_id'=>['required',Rule::exists('cidades','id')->where('estado_id',data_get($this->form,'estado_id'))],
-            'form.nome'=>['required','string','min:3','max:255'],'form.cpf'=>['required','string','max:20',Rule::unique('cadastro_tdas','cpf')->ignore($this->editarId)],'form.rg'=>['nullable','string','max:30'],'form.celular'=>['required','string','max:20'],'form.email'=>['nullable','email','max:255'],
+            'form.nome'=>['required','string','min:3','max:255'],'form.cpf'=>['required','string','size:11',function($attribute,$value,$fail){if(!$this->cpfValido($value))$fail('O CPF informado não é válido.');},Rule::unique('cadastro_tdas','cpf')->ignore($this->editarId)],'form.rg'=>['nullable','string','max:30'],'form.celular'=>['required','string',function($attribute,$value,$fail){if(!$this->telefoneValido($value))$fail('O celular deve conter 10 ou 11 dígitos.');}],'form.email'=>['nullable','email','max:255'],
             'form.data_nascimento'=>['required','date','before:today'],'form.data_ingresso_grupo'=>['nullable','date','before_or_equal:today'],'form.funcao_grupo'=>['required','string','max:255'],'form.endereco'=>['required','string','max:255'],'form.numero'=>['required','string','max:30'],'form.cep'=>['nullable','string','max:10'],'form.bairro'=>['required','string','max:255'],
-            'form.estado_civil'=>['required','string','max:50'],'form.escolaridade'=>['required','string','max:255'],'form.emergencia_nome'=>['required','string','max:255'],'form.emergencia_celular'=>['required','string','max:20'],'form.condicao_atual'=>['required',Rule::in(['membro','cpo','colaborador','obreiro','levita','auxiliar'])],
+            'form.estado_civil'=>['required','string','max:50'],'form.escolaridade'=>['required','string','max:255'],'form.emergencia_nome'=>['required','string','max:255'],'form.emergencia_celular'=>['required','string',function($attribute,$value,$fail){if(!$this->telefoneValido($value))$fail('O celular de emergência deve conter 10 ou 11 dígitos.');}],'form.condicao_atual'=>['required',Rule::in(['membro','cpo','colaborador','obreiro','levita','auxiliar'])],
             'form.tem_filhos'=>['required','boolean'],'form.quantidade_filhos'=>[Rule::requiredIf($temFilhos),'nullable','integer','min:1','max:30'],'form.idade_filhos'=>[Rule::requiredIf($temFilhos),'nullable','string','max:255'],
             'form.inicio_iurd'=>['required','date','before_or_equal:today'],'form.batizado_aguas'=>['required','boolean'],'form.data_batismo_aguas'=>[Rule::requiredIf($batizadoAguas),'nullable','date','before_or_equal:today'],'form.batizado_espirito_santo'=>['required','boolean'],'form.data_batismo_espirito_santo'=>[Rule::requiredIf($batizadoEspirito),'nullable','date','before_or_equal:today'],'form.ja_se_afastou'=>['required','boolean'],
             'form.sexo'=>['required',Rule::in(['feminino','masculino'])],'form.godllywood_autoajuda'=>[Rule::requiredIf($sexo==='feminino'),'nullable','boolean'],'form.meditacao_univer'=>[Rule::requiredIf($sexo==='feminino'),'nullable','boolean'],'form.intellimen_reunioes'=>[Rule::requiredIf($sexo==='masculino'),'nullable','boolean'],'form.intellimen_desafios'=>[Rule::requiredIf($sexo==='masculino'),'nullable','boolean'],
@@ -98,6 +98,9 @@ class CadastrosTda extends Component
 
     public function salvar():void
     {
+        foreach(['cpf','celular','emergencia_celular'] as $campo){
+            if(array_key_exists($campo,$this->form))$this->form[$campo]=preg_replace('/\D/','',(string)$this->form[$campo]);
+        }
         $this->validate();
         $dados=collect((new CadastroTda)->getFillable())
             ->filter(fn($campo)=>array_key_exists($campo,$this->form))
@@ -159,6 +162,19 @@ class CadastrosTda extends Component
     }
     private function booleano($valor):bool{return filter_var($valor,FILTER_VALIDATE_BOOLEAN);}
     private function diasValidos():array{return ['segunda','terca','quarta','quinta','sexta','sabado','domingo'];}
+    private function telefoneValido($valor):bool{return preg_match('/^\d{10,11}$/',(string)$valor)===1;}
+    private function cpfValido($valor):bool
+    {
+        $cpf=preg_replace('/\D/','',(string)$valor);
+        if(strlen($cpf)!==11 || preg_match('/^(\d)\1{10}$/',$cpf))return false;
+        for($t=9;$t<11;$t++){
+            $soma=0;
+            for($i=0;$i<$t;$i++)$soma+=(int)$cpf[$i]*(($t+1)-$i);
+            $digito=((10*$soma)%11)%10;
+            if((int)$cpf[$t]!==$digito)return false;
+        }
+        return true;
+    }
 
     public function render()
     {

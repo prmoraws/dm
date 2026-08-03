@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="darkMode ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark')">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
     <meta charset="utf-8">
@@ -10,6 +10,12 @@
         content="Aplicação web desenvolvida por J.M.Moraes, utilizando Laravel, Livewire e Tailwind CSS. Solução eficiente para gestão.">
     <meta name="keywords" content="moraw, laravel, livewire, tailwind, aplicação web, desenvolvimento web, Moraes">
     <meta name="author" content="J.M.Moraes">
+
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
 
     <!-- Open Graph (Redes Sociais) -->
     <meta property="og:title" content="Moraw | Aplicação Web Moderna">
@@ -50,16 +56,15 @@
         @if (Route::has('login'))
             <nav class="flex items-center justify-end gap-4">
                 <!-- Seletor de Modo Escuro -->
-                <button
-                    @click="darkMode = !darkMode; localStorage.setItem('darkMode', darkMode); document.documentElement.classList.toggle('dark')"
+                <button id="theme-toggle" type="button" aria-label="Alternar modo claro e escuro"
                     class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <svg x-show="!darkMode" class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                    <svg data-theme-icon="light" class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
                         </path>
                     </svg>
-                    <svg x-show="darkMode" class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor"
+                    <svg data-theme-icon="dark" class="hidden w-5 h-5 text-gray-300" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M20.354 15.354A9 9 0 01 8.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
@@ -149,7 +154,6 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 
 </html>
