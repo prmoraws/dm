@@ -50,7 +50,15 @@
                                 <option value="">Selecione</option>@foreach($igrejas as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
                             </x-tda-select>
                             <x-tda-input campo="data_ingresso_grupo" rotulo="Data de ingresso no grupo" tipo="date" />
-                            <div class="sm:col-span-2"><x-tda-input campo="funcao_grupo" rotulo="Função no grupo" obrigatorio /></div>
+                            <div class="sm:col-span-2">
+                                <x-tda-select campo="funcao_grupo" rotulo="Função no grupo" obrigatorio>
+                                    <option value="">Selecione</option>
+                                    <option value="Membro">Membro</option>
+                                    <option value="Secretaria">Secretaria</option>
+                                    <option value="Mídia">Mídia</option>
+                                    <option value="Obreiro">Obreiro</option>
+                                </x-tda-select>
+                            </div>
                         </div>
                     @elseif ($step === 3)
                         <x-tda-title titulo="Dados pessoais" descricao="Preencha os seus dados de identificação." />
