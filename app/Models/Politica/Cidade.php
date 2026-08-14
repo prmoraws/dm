@@ -5,6 +5,7 @@ namespace App\Models\Politica;
 use App\Models\Universal\Igreja;
 use App\Models\Politica\V2\Apuracao;
 use App\Models\Politica\V2\EspelhoInteligencia;
+use App\Models\Politica\V2\EspelhoOperacional;
 use App\Models\Politica\V2\ResultadoMunicipal;
 use App\Models\Politica\V2\Zona;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -73,6 +74,11 @@ class Cidade extends Model
     public function inteligencia()
     {
         return $this->hasMany(EspelhoInteligencia::class, 'cidade_id');
+    }
+
+    public function espelhoOperacional()
+    {
+        return $this->hasOne(EspelhoOperacional::class, 'cidade_id');
     }
 
     public function candidatosFavoritos()

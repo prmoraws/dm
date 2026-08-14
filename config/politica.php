@@ -11,6 +11,26 @@ return [
         'snapshot_path' => env('POLITICA_SNAPSHOT_PATH', 'politica/apuracao'),
     ],
 
+
+    'migracao_v1' => [
+        'chunk' => (int) env('POLITICA_MIGRACAO_V1_CHUNK', 1000),
+        'prioritarios_legacy' => [
+            4623 => 'rogeria-santos',
+            4624 => 'marcio-marinho',
+            4625 => 'jurailton-santos',
+            4626 => 'jose-de-arimateia',
+        ],
+        'cargos' => [
+            'PRESIDENTE' => 'Presidente',
+            'GOVERNADOR' => 'Governador',
+            'SENADOR' => 'Senador',
+            'DEPUTADO FEDERAL' => 'Deputado Federal',
+            'DEPUTADO ESTADUAL' => 'Deputado Estadual',
+            'PREFEITO' => 'Prefeito',
+            'VEREADOR' => 'Vereador',
+        ],
+    ],
+
     'prioritarios' => [
         [
             'nome_completo' => 'Rogéria Santos',

@@ -27,6 +27,7 @@ class PoliticaV2EstruturaTest extends TestCase
             'politica_zonas', 'politica_secoes', 'politica_resultados_municipais', 'politica_resultados_zonas',
             'politica_resultados_secoes', 'politica_fontes_estado', 'politica_apuracoes',
             'politica_apuracao_candidaturas', 'politica_apuracao_historico', 'politica_espelho_inteligencia',
+            'politica_espelho_operacional', 'politica_migracoes_dados',
         ] as $table) {
             $this->assertTrue(Schema::hasTable($table), "Tabela {$table} não foi criada.");
         }
@@ -37,7 +38,8 @@ class PoliticaV2EstruturaTest extends TestCase
     {
         $this->assertTrue(Schema::hasColumns('politica_candidaturas', [
             'politico_id', 'eleicao_id', 'cargo_id', 'partido_id', 'tse_sq_candidato',
-            'numero_urna', 'nome_urna', 'situacao_registro', 'situacao_eleicao',
+            'numero_urna', 'nome_urna', 'cidade_id', 'origem', 'legacy_candidato_id', 'origem_chave',
+            'situacao_registro', 'situacao_eleicao',
             'votos_total', 'percentual_total', 'eleito', 'sincronizado_em',
         ]));
     }
@@ -70,6 +72,7 @@ class PoliticaV2EstruturaTest extends TestCase
         $this->assertTrue(method_exists($politico, 'candidaturas'));
         $this->assertTrue(method_exists($politico, 'mandatos'));
         $this->assertTrue(method_exists($politico, 'acompanhamento'));
+        $this->assertTrue(method_exists($candidatura, 'cidade'));
         $this->assertTrue(method_exists($candidatura, 'resultadosMunicipais'));
         $this->assertTrue(method_exists($eleicao, 'apuracoes'));
         $this->assertTrue(method_exists($apuracao, 'historico'));
