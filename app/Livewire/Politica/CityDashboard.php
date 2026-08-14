@@ -22,6 +22,10 @@ class CityDashboard extends Component
     public function render()
     {
         $cidades = Cidade::query()
+            ->withExists([
+                'espelhoOperacional as espelho_operacional_exists',
+                'resultadosEleitorais as resultados_eleitorais_exists',
+            ])
             ->when($this->search, fn($query) => $query->where('nome', 'like', '%' . $this->search . '%'))
             ->orderBy('nome')
             ->paginate(15); // Define 15 itens por página

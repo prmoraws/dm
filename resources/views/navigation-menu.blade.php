@@ -119,11 +119,12 @@
                                 'icon' =>
                                     '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.447-.894L15 7m-6 13v-6.5m6 10V7" /></svg>',
                                 'links' => [
-                                    ['route' => 'politica.dashboard', 'label' => 'Dashboard Cidades'],
+                                    ['route' => 'politica.dashboard', 'label' => 'Dashboard'],
+                                    ['route' => 'politica.acompanhamento', 'label' => 'Acompanhamento'],
+                                    ['route' => 'politica.cidades', 'label' => 'Espelho Inteligente'],
+                                    ['route' => 'politica.mapa', 'label' => 'Mapa'],
                                     ['is_divider' => true],
-                                    ['route' => 'politica.mapa', 'label' => 'Mapa Interativo'],
-                                    ['route' => 'politica.candidatos', 'label' => 'Gerenciar Candidatos'],
-                                    ['is_divider' => true],
+                                    ['route' => 'politica.candidatos', 'label' => 'Candidatos (legado)'],
                                 ],
                             ],
                             'Secretaria' => [

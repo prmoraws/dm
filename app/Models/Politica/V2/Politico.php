@@ -22,6 +22,11 @@ class Politico extends Model
         'ativo' => 'boolean',
     ];
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     public function candidaturas() { return $this->hasMany(Candidatura::class, 'politico_id'); }
     public function filiacoes() { return $this->hasMany(Filiacao::class, 'politico_id'); }
     public function mandatos() { return $this->hasMany(Mandato::class, 'politico_id'); }

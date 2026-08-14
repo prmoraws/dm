@@ -13,7 +13,7 @@ class EspelhoInteligenteService
      * Resume o desempenho eleitoral agregado da cidade.
      * Quando cargoId é informado, evita comparar candidaturas de cargos diferentes.
      */
-    public function resumoCidade(Cidade $cidade, ?int $eleicaoId = null, ?int $cargoId = null): array
+    public function resumoCidade(Cidade $cidade, ?int $eleicaoId = null, ?int $cargoId = null, int $limiteRanking = 50): array
     {
         $query = ResultadoMunicipal::query()
             ->with(['candidatura.politico', 'candidatura.partido', 'candidatura.cargo'])
@@ -27,12 +27,15 @@ class EspelhoInteligenteService
             $query->whereHas('candidatura', fn ($q) => $q->where('cargo_id', $cargoId));
         }
 
+        $limiteRanking = max(2, min($limiteRanking, 100));
+        $totalResultados = (clone $query)->count();
+        $totalVotosCandidatos = (int) (clone $query)->sum('votos');
+
         /** @var Collection<int, ResultadoMunicipal> $resultados */
         $resultados = $query
             ->orderByDesc('votos')
+            ->limit($limiteRanking)
             ->get();
-
-        $totalVotosCandidatos = (int) $resultados->sum('votos');
         $lider = $resultados->first();
         $segundo = $resultados->skip(1)->first();
         $origens = $resultados
@@ -51,6 +54,8 @@ class EspelhoInteligenteService
             'segundo' => $this->resultadoParaResumo($segundo),
             'diferenca_votos' => $lider && $segundo ? max(0, (int) $lider->votos - (int) $segundo->votos) : null,
             'ranking' => $resultados->map(fn (ResultadoMunicipal $resultado) => $this->resultadoParaResumo($resultado))->values()->all(),
+            'ranking_total_resultados' => $totalResultados,
+            'ranking_limitado' => $totalResultados > $limiteRanking,
             'qualidade' => [
                 'origens' => $origens->all(),
                 'possui_dados_legados' => $origens->contains('legacy_v1'),
@@ -148,6 +153,7 @@ class EspelhoInteligenteService
         return [
             'candidatura_id' => $resultado->candidatura_id,
             'politico' => $resultado->candidatura?->politico?->nome_publico,
+            'politico_slug' => $resultado->candidatura?->politico?->slug,
             'cargo' => $resultado->candidatura?->cargo?->nome,
             'partido' => $resultado->candidatura?->partido?->sigla,
             'origem' => $resultado->candidatura?->origem,

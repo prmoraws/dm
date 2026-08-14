@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Politica;
 
 use App\Services\Politica\V2\LegacyV1MigrationService;
+use App\Services\Politica\V2\PoliticaDashboardService;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -52,6 +53,8 @@ class PoliticaV2MigrarLegado extends Command
             $this->error('Falha na migração: '.$e->getMessage());
             return self::FAILURE;
         }
+
+        app(PoliticaDashboardService::class)->esquecerCache();
 
         $this->newLine();
         $this->info('Migração concluída.');

@@ -34,6 +34,10 @@ use App\Livewire\Politica\CityDashboard;
 use App\Livewire\Politica\CityView;
 use App\Livewire\Politica\CandidatesManager;
 use App\Livewire\Politica\EspelhoManager;
+use App\Livewire\Politica\V2\Dashboard as PoliticaDashboardV2;
+use App\Livewire\Politica\V2\AcompanhamentoPrioritario;
+use App\Livewire\Politica\V2\PoliticoShow;
+use App\Livewire\Politica\V2\EspelhoInteligente;
 use App\Http\Controllers\Universal\PessoaPrintController;
 use Illuminate\Support\Facades\Artisan;
 use App\Livewire\Unp\FormularioBatismo;
@@ -161,7 +165,13 @@ Route::middleware([
 
     // Rotas do Grupo Política
     Route::group(['prefix' => 'politica', 'middleware' => 'team.access:Politica'], function () {
-        Route::get('/dashboard', CityDashboard::class)->name('politica.dashboard');
+        Route::get('/dashboard', PoliticaDashboardV2::class)->name('politica.dashboard');
+        Route::get('/acompanhamento', AcompanhamentoPrioritario::class)->name('politica.acompanhamento');
+        Route::get('/politicos/{politico}', PoliticoShow::class)->name('politica.politicos.show');
+        Route::get('/cidades', CityDashboard::class)->name('politica.cidades');
+        Route::get('/espelho/{cidade}', EspelhoInteligente::class)->name('politica.espelho.inteligente');
+
+        // Rotas legadas preservadas durante a transição V1 → V2.
         Route::get('/cidade/{cidade}', CityView::class)->name('politica.cidade.view');
         Route::get('/candidatos', CandidatesManager::class)->name('politica.candidatos');
         Route::get('/cidade/{cidade}/edit', EspelhoManager::class)->name('politica.espelho.edit');
