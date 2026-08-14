@@ -3,6 +3,10 @@
 namespace App\Models\Politica;
 
 use App\Models\Universal\Igreja;
+use App\Models\Politica\V2\Apuracao;
+use App\Models\Politica\V2\EspelhoInteligencia;
+use App\Models\Politica\V2\ResultadoMunicipal;
+use App\Models\Politica\V2\Zona;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -45,9 +49,30 @@ class Cidade extends Model
         /**
      * Sempre converte o nome da cidade para maiúsculas antes de salvar.
      */
-    public function setNameAttribute($value)
+    public function setNomeAttribute($value)
     {
         $this->attributes['nome'] = mb_strtoupper($value, 'UTF-8');
+    }
+
+
+    public function zonas()
+    {
+        return $this->hasMany(Zona::class, 'cidade_id');
+    }
+
+    public function resultadosEleitorais()
+    {
+        return $this->hasMany(ResultadoMunicipal::class, 'cidade_id');
+    }
+
+    public function apuracoes()
+    {
+        return $this->hasMany(Apuracao::class, 'cidade_id');
+    }
+
+    public function inteligencia()
+    {
+        return $this->hasMany(EspelhoInteligencia::class, 'cidade_id');
     }
 
     public function candidatosFavoritos()

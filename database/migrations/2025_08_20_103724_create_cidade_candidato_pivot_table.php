@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cidade_candidato_pivot');
+        Schema::dropIfExists('cidade_candidato');
     }
 };

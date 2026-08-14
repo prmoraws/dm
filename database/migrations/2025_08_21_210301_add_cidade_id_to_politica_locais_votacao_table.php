@@ -27,7 +27,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('politica_locais_votacao', function (Blueprint $table) {
-            //
+            $table->dropForeign(['cidade_id']);
+            $table->dropColumn('cidade_id');
         });
     }
 };

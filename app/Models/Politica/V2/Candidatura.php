@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Models\Politica\V2;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Candidatura extends Model
+{
+    use HasFactory;
+
+    protected $table = 'politica_candidaturas';
+    protected $fillable = [
+        'politico_id', 'eleicao_id', 'cargo_id', 'partido_id', 'tse_sq_candidato',
+        'numero_urna', 'nome_urna', 'uf', 'situacao_registro', 'situacao_eleicao',
+        'coligacao', 'federacao', 'votos_total', 'percentual_total', 'eleito',
+        'segundo_turno', 'foto_url', 'sincronizado_em',
+    ];
+    protected $casts = [
+        'votos_total' => 'integer',
+        'percentual_total' => 'decimal:4',
+        'eleito' => 'boolean',
+        'segundo_turno' => 'boolean',
+        'sincronizado_em' => 'datetime',
+    ];
+
+    public function politico() { return $this->belongsTo(Politico::class, 'politico_id'); }
+    public function eleicao() { return $this->belongsTo(Eleicao::class, 'eleicao_id'); }
+    public function cargo() { return $this->belongsTo(Cargo::class, 'cargo_id'); }
+    public function partido() { return $this->belongsTo(Partido::class, 'partido_id'); }
+    public function resultadosMunicipais() { return $this->hasMany(ResultadoMunicipal::class, 'candidatura_id'); }
+    public function resultadosZonas() { return $this->hasMany(ResultadoZona::class, 'candidatura_id'); }
+    public function resultadosSecoes() { return $this->hasMany(ResultadoSecao::class, 'candidatura_id'); }
+    public function apuracoes() { return $this->hasMany(ApuracaoCandidatura::class, 'candidatura_id'); }
+}

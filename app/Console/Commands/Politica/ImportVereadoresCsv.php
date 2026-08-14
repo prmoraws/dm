@@ -2,112 +2,128 @@
 
 namespace App\Console\Commands\Politica;
 
+use App\Models\Politica\{Bairro, Candidato, Cidade, LocalVotacao};
 use Illuminate\Console\Command;
-use App\Models\Politica\{Cidade, Bairro, LocalVotacao, Candidato, VotacaoDetalhada};
 use Illuminate\Support\Facades\DB;
 
 class ImportVereadoresCsv extends Command
 {
-    protected $signature = 'politica:import-vereadores-csv {filepath : O caminho para o arquivo CSV a partir da raiz do projeto}';
-    protected $description = 'Importa os votos detalhados dos vereadores de interesse de um arquivo CSV pré-filtrado.';
+    protected $signature = 'politica:import-vereadores-csv
+                            {filepath : O caminho para o arquivo CSV a partir da raiz do projeto}
+                            {--ano=2024 : Ano da eleição}
+                            {--chunk=1000 : Quantidade de registros gravados por lote}';
 
-    public function handle()
+    protected $description = 'Importa votos detalhados de vereadores em lotes, sem carregar o CSV inteiro na memória.';
+
+    public function handle(): int
     {
         $filepath = base_path($this->argument('filepath'));
-        if (!file_exists($filepath)) {
+        $ano = (int) $this->option('ano');
+        $chunkSize = max(100, min((int) $this->option('chunk'), 10_000));
+
+        if (! is_file($filepath)) {
             $this->error("Arquivo não encontrado em: {$filepath}");
-            return 1;
+            return self::FAILURE;
         }
 
-        // Cache em memória
-        $cidadesCache = Cidade::pluck('id', 'nome')->toArray();
+        $cidadesCache = Cidade::query()->pluck('id', 'nome')->toArray();
         $bairrosCache = [];
         $locaisVotacaoCache = [];
-        $candidatosCache = Candidato::pluck('id', 'nome')->toArray();
-        
+        $candidatosCache = Candidato::query()->pluck('id', 'nome')->toArray();
         $votacaoData = [];
-        $chunkSize = 1000;
+        $importados = 0;
 
-        $this->info("Iniciando importação do arquivo de vereadores...");
-        $fileHandle = fopen($filepath, 'r');
-        fgetcsv($fileHandle); // Pula cabeçalho
-
-        $totalLines = count(file($filepath)) - 1;
-        $progressBar = $this->output->createProgressBar($totalLines);
-        
-        DB::beginTransaction();
-        
-        while (($row = fgetcsv($fileHandle)) !== false) {
-            $progressBar->advance();
-
-            // Mapeamento das colunas do seu CSV
-            $nomeCandidato = mb_strtoupper($row[0] ?? '', 'UTF-8');
-            $partido = mb_strtoupper($row[1] ?? '', 'UTF-8');
-            $cargo = mb_strtoupper($row[2] ?? '', 'UTF-8');
-            $nomeMunicipio = mb_strtoupper($row[3] ?? '', 'UTF-8');
-            $zona = $row[4] ?? '';
-            $secao = $row[5] ?? '';
-            $votos = (int)($row[6] ?? 0);
-
-            if ($cargo !== 'VEREADOR' || $votos === 0 || empty($nomeCandidato) || empty($nomeMunicipio)) {
-                continue;
-            }
-
-            // Lógica de Cache e Inserção
-            if (!isset($cidadesCache[$nomeMunicipio])) {
-                $cidade = Cidade::create(['nome' => $nomeMunicipio]);
-                $cidadesCache[$nomeMunicipio] = $cidade->id;
-            }
-            $cidadeId = $cidadesCache[$nomeMunicipio];
-
-            $bairroKey = $cidadeId . '_BAIRRO NÃO INFORMADO';
-            if (!isset($bairrosCache[$bairroKey])) {
-                $bairro = Bairro::create(['cidade_id' => $cidadeId, 'nome' => 'BAIRRO NÃO INFORMADO']);
-                $bairrosCache[$bairroKey] = $bairro->id;
-            }
-            $bairroId = $bairrosCache[$bairroKey];
-
-            // Criamos um nome único para o local de votação para o cache
-            $localKey = "{$cidadeId}_{$zona}_{$secao}";
-            if (!isset($locaisVotacaoCache[$localKey])) {
-                $local = LocalVotacao::firstOrCreate(
-                    ['cidade_id' => $cidadeId, 'endereco' => "Zona: {$zona} / Seção: {$secao}"],
-                    ['bairro_id' => $bairroId, 'nome' => "Local Zona {$zona} / Seção {$secao}"]
-                );
-                $locaisVotacaoCache[$localKey] = $local->id;
-            }
-            $localVotacaoId = $locaisVotacaoCache[$localKey];
-
-            if (!isset($candidatosCache[$nomeCandidato])) {
-                $candidato = Candidato::create(['nome' => $nomeCandidato, 'partido' => $partido]);
-                $candidatosCache[$nomeCandidato] = $candidato->id;
-            }
-            $candidatoId = $candidatosCache[$nomeCandidato];
-
-            $votacaoData[] = [
-                'local_votacao_id' => $localVotacaoId,
-                'candidato_id' => $candidatoId,
-                'ano_eleicao' => 2024, // Assumindo que os dados são de 2024
-                'cargo' => 'VEREADOR',
-                'votos_recebidos' => $votos,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-
-            if (count($votacaoData) >= $chunkSize) {
-                DB::table('politica_votacao_detalhada')->insert($votacaoData);
-                $votacaoData = [];
-            }
+        $fileHandle = fopen($filepath, 'rb');
+        if ($fileHandle === false) {
+            $this->error('Não foi possível abrir o CSV.');
+            return self::FAILURE;
         }
 
-        if (!empty($votacaoData)) {
-            DB::table('politica_votacao_detalhada')->insert($votacaoData);
+        $this->info("Importando vereadores / {$ano} em lotes de {$chunkSize} registros.");
+        fgetcsv($fileHandle);
+        $progressBar = $this->output->createProgressBar();
+        $progressBar->start();
+
+        try {
+            while (($row = fgetcsv($fileHandle)) !== false) {
+                $progressBar->advance();
+
+                $nomeCandidato = mb_strtoupper($row[0] ?? '', 'UTF-8');
+                $partido = mb_strtoupper($row[1] ?? '', 'UTF-8');
+                $cargo = mb_strtoupper($row[2] ?? '', 'UTF-8');
+                $nomeMunicipio = mb_strtoupper($row[3] ?? '', 'UTF-8');
+                $zona = trim((string) ($row[4] ?? ''));
+                $secao = trim((string) ($row[5] ?? ''));
+                $votos = (int) ($row[6] ?? 0);
+
+                if ($cargo !== 'VEREADOR' || $votos === 0 || $nomeCandidato === '' || $nomeMunicipio === '') {
+                    continue;
+                }
+
+                if (! isset($cidadesCache[$nomeMunicipio])) {
+                    $cidade = Cidade::query()->create(['nome' => $nomeMunicipio]);
+                    $cidadesCache[$nomeMunicipio] = $cidade->id;
+                }
+                $cidadeId = $cidadesCache[$nomeMunicipio];
+
+                $bairroKey = $cidadeId.'_BAIRRO NÃO INFORMADO';
+                if (! isset($bairrosCache[$bairroKey])) {
+                    $bairro = Bairro::query()->firstOrCreate([
+                        'cidade_id' => $cidadeId,
+                        'nome' => 'BAIRRO NÃO INFORMADO',
+                    ]);
+                    $bairrosCache[$bairroKey] = $bairro->id;
+                }
+                $bairroId = $bairrosCache[$bairroKey];
+
+                $localKey = "{$cidadeId}_{$zona}_{$secao}";
+                if (! isset($locaisVotacaoCache[$localKey])) {
+                    $local = LocalVotacao::query()->firstOrCreate(
+                        ['cidade_id' => $cidadeId, 'endereco' => "Zona: {$zona} / Seção: {$secao}"],
+                        ['bairro_id' => $bairroId, 'nome' => "Local Zona {$zona} / Seção {$secao}"]
+                    );
+                    $locaisVotacaoCache[$localKey] = $local->id;
+                }
+
+                if (! isset($candidatosCache[$nomeCandidato])) {
+                    $candidato = Candidato::query()->create(['nome' => $nomeCandidato, 'partido' => $partido]);
+                    $candidatosCache[$nomeCandidato] = $candidato->id;
+                }
+
+                $votacaoData[] = [
+                    'local_votacao_id' => $locaisVotacaoCache[$localKey],
+                    'candidato_id' => $candidatosCache[$nomeCandidato],
+                    'ano_eleicao' => $ano,
+                    'cargo' => 'VEREADOR',
+                    'votos_recebidos' => $votos,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                if (count($votacaoData) >= $chunkSize) {
+                    $importados += $this->insertChunk($votacaoData);
+                    $votacaoData = [];
+                }
+            }
+
+            if ($votacaoData !== []) {
+                $importados += $this->insertChunk($votacaoData);
+            }
+        } finally {
+            fclose($fileHandle);
+            $progressBar->finish();
         }
 
-        DB::commit();
-        fclose($fileHandle);
-        $progressBar->finish();
-        $this->info("\n\nImportação de vereadores concluída com sucesso!");
-        return 0;
+        $this->newLine(2);
+        $this->info("Importação concluída: {$importados} registros gravados.");
+
+        return self::SUCCESS;
+    }
+
+    private function insertChunk(array $rows): int
+    {
+        DB::transaction(static fn () => DB::table('politica_votacao_detalhada')->insert($rows), 3);
+
+        return count($rows);
     }
 }

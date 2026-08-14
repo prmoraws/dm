@@ -4,6 +4,7 @@ namespace App\Models\Politica;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Politica\V2\Secao;
 
 class LocalVotacao extends Model
 {
@@ -31,6 +32,11 @@ class LocalVotacao extends Model
     public function cidade()
     {
         return $this->belongsTo(Cidade::class, 'cidade_id');
+    }
+
+    public function secoes()
+    {
+        return $this->hasMany(Secao::class, 'local_votacao_id');
     }
 
     public function votacoes()

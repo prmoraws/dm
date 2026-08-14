@@ -30,6 +30,6 @@ public function up(): void
      */
     public function down(): void
     {
-        Schema::dropIfExists('votacao_detalhadas');
+        Schema::dropIfExists('politica_votacao_detalhada');
     }
 };
