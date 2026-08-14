@@ -34,6 +34,14 @@ class PoliticaV2EstruturaTest extends TestCase
     }
 
     #[Test]
+    public function cidades_expoem_coordenadas_necessarias_para_o_mapa_v2(): void
+    {
+        $this->assertTrue(Schema::hasColumns('politica_cidades', [
+            'nome', 'ibge_code', 'latitude', 'longitude', 'populacao',
+        ]));
+    }
+
+    #[Test]
     public function candidaturas_separam_politico_eleicao_cargo_e_partido(): void
     {
         $this->assertTrue(Schema::hasColumns('politica_candidaturas', [

@@ -8,7 +8,7 @@
             Espelho Político: {{ $cidade->nome }}
         </h2>
         <div class="flex space-x-2">
-            <a href="{{ route('politica.espelho.edit', $cidade) }}" wire:navigate class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">
+            <a href="{{ route('politica.legado.espelho.edit', $cidade) }}" wire:navigate class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">
                 Editar Espelho
             </a>
             <button 

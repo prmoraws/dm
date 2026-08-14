@@ -1,16 +1,16 @@
 <div>
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-3">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">{{ $politico->nome_publico }}</h2>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Perfil político e histórico eleitoral consolidado.</p>
             </div>
-            <a href="{{ route('politica.acompanhamento') }}" wire:navigate class="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">← Acompanhamento</a>
+            <a href="{{ route('politica.acompanhamento') }}" wire:navigate class="inline-flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-indigo-600 shadow-sm hover:bg-gray-50 sm:w-auto dark:border-gray-700 dark:bg-gray-800 dark:text-indigo-400 dark:hover:bg-gray-700">← Acompanhamento</a>
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-5 sm:py-8">
+        <div class="mx-auto max-w-7xl space-y-6 px-3 sm:px-6 lg:px-8">
             <section class="grid gap-6 lg:grid-cols-3">
                 <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <div class="flex items-center gap-4">
@@ -41,7 +41,7 @@
                             <h2 class="mt-1 font-semibold text-gray-900 dark:text-white">Desempenho territorial</h2>
                         </div>
                         @if ($politico->candidaturas->isNotEmpty())
-                            <select wire:model.live="candidaturaId" class="rounded-lg border-gray-300 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            <select wire:model.live="candidaturaId" class="w-full rounded-xl border-gray-300 bg-white text-sm text-gray-900 sm:w-auto dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                 @foreach ($politico->candidaturas as $cand)
                                     <option value="{{ $cand->id }}">{{ $cand->eleicao?->ano }} · {{ $cand->cargo?->nome }}{{ $cand->partido?->sigla ? ' · '.$cand->partido->sigla : '' }}</option>
                                 @endforeach

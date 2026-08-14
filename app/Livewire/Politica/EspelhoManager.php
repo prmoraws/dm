@@ -93,7 +93,7 @@ class EspelhoManager extends Component
         $this->cidade->candidatosFavoritos()->sync(array_unique($allSelectedIds));
 
         session()->flash('success', 'Espelho político atualizado com sucesso!');
-        return $this->redirectRoute('politica.cidade.view', ['cidade' => $this->cidade->id]);
+        return $this->redirectRoute('politica.legado.cidade.view', ['cidade' => $this->cidade->id]);
     }
 
     public function render()

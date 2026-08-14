@@ -13,6 +13,7 @@ use App\Models\Politica\V2\Cargo;
 use App\Models\Politica\V2\Eleicao;
 use App\Models\Politica\V2\EspelhoOperacional;
 use App\Models\Politica\V2\Politico;
+use App\Models\Politica\V2\Partido;
 use App\Models\Politica\V2\ResultadoMunicipal;
 use App\Services\Politica\V2\PoliticaDashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,10 +55,12 @@ class PoliticaV2TelasTest extends TestCase
             'descricao' => 'Eleições Gerais 2022',
         ]);
         $cargo = Cargo::query()->create(['tse_codigo' => '0006', 'nome' => 'Deputado Federal', 'ordem' => 40]);
+        $partido = Partido::query()->create(['numero' => 10, 'sigla' => 'REPUBLICANOS', 'nome' => 'Republicanos']);
         $candidatura = Candidatura::query()->create([
             'politico_id' => $politico->id,
             'eleicao_id' => $eleicao->id,
             'cargo_id' => $cargo->id,
+            'partido_id' => $partido->id,
             'votos_total' => 82012,
             'origem' => 'legacy_v1',
         ]);

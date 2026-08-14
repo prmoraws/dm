@@ -95,6 +95,7 @@ class PoliticaV2MigracaoLegadoTest extends TestCase
 
         $this->assertSame('ROGERIA DE ALMEIDA PEREIRA DOS SANTOS', $politico->nome_completo);
         $this->assertSame('legacy_v1', $candidatura->origem);
+        $this->assertSame('REPUBLICANOS', $candidatura->partido?->sigla, 'Prioritário legado sem partido deve receber a correção configurada.');
         $this->assertSame(5, $candidatura->votos_total);
         $this->assertNull($candidatura->cidade_id, 'Deputado federal tem abrangência estadual, não municipal.');
 

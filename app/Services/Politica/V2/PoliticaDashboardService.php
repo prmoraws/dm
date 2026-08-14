@@ -45,7 +45,7 @@ class PoliticaDashboardService
 
             return [
                 'metricas' => [
-                    'cidades' => Cidade::query()->count(),
+                    'cidades' => Cidade::query()->whereNotNull('ibge_code')->count(),
                     'acompanhamentos' => $acompanhamentos->count(),
                     'com_historico' => $prioritariosComHistorico,
                     'eleicoes' => Eleicao::query()->count(),

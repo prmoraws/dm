@@ -22,6 +22,7 @@ class CityDashboard extends Component
     public function render()
     {
         $cidades = Cidade::query()
+            ->whereNotNull('ibge_code')
             ->withExists([
                 'espelhoOperacional as espelho_operacional_exists',
                 'resultadosEleitorais as resultados_eleitorais_exists',
@@ -32,6 +33,7 @@ class CityDashboard extends Component
 
         return view('livewire.politica.city-dashboard', [
             'cidades' => $cidades,
+            'totalCidades' => Cidade::query()->whereNotNull('ibge_code')->count(),
         ]);
     }
 }

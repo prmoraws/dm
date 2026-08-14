@@ -5,15 +5,16 @@
                 <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">Inteligência Política</h2>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Acompanhamento eleitoral, territorial e operacional em uma única base.</p>
             </div>
-            <div class="mt-2 flex gap-2 sm:mt-0">
-                <a href="{{ route('politica.acompanhamento') }}" wire:navigate class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">Acompanhamento</a>
-                <a href="{{ route('politica.cidades') }}" wire:navigate class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Espelho por cidade</a>
+            <div class="mt-2 grid w-full gap-2 sm:mt-0 sm:flex sm:w-auto">
+                <a href="{{ route('politica.acompanhamento') }}" wire:navigate class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">Acompanhamento</a>
+                <a href="{{ route('politica.cidades') }}" wire:navigate class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Espelho por cidade</a>
+                <a href="{{ route('politica.mapa') }}" wire:navigate class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">Mapa eleitoral</a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-5 sm:py-8">
+        <div class="mx-auto max-w-7xl space-y-6 px-3 sm:px-6 lg:px-8">
             <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 @php
                     $cards = [

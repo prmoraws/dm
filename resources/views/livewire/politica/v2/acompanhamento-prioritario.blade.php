@@ -6,8 +6,8 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="mx-auto max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
+    <div class="py-5 sm:py-8">
+        <div class="mx-auto max-w-7xl space-y-5 px-3 sm:px-6 lg:px-8">
             <div class="grid gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:grid-cols-3 dark:border-gray-700 dark:bg-gray-800">
                 <div class="sm:col-span-2">
                     <label class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Buscar</label>

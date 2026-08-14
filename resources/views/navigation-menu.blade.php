@@ -122,9 +122,7 @@
                                     ['route' => 'politica.dashboard', 'label' => 'Dashboard'],
                                     ['route' => 'politica.acompanhamento', 'label' => 'Acompanhamento'],
                                     ['route' => 'politica.cidades', 'label' => 'Espelho Inteligente'],
-                                    ['route' => 'politica.mapa', 'label' => 'Mapa'],
-                                    ['is_divider' => true],
-                                    ['route' => 'politica.candidatos', 'label' => 'Candidatos (legado)'],
+                                    ['route' => 'politica.mapa', 'label' => 'Mapa Eleitoral'],
                                 ],
                             ],
                             'Secretaria' => [

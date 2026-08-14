@@ -249,7 +249,7 @@ class LegacyV1MigrationService
                 (int) $contexto->candidato_id,
                 (string) $contexto->nome
             );
-            $partido = $this->resolverPartidoLegado($contexto->partido);
+            $partido = $this->resolverPartidoLegado($contexto->partido, (int) $contexto->candidato_id);
             if ($tipoEleicao === 'municipal' && (int) $contexto->cidades_distintas > 1) {
                 $this->stats['candidaturas_municipais_multicidade']++;
             }
@@ -730,9 +730,14 @@ class LegacyV1MigrationService
         );
     }
 
-    private function resolverPartidoLegado(?string $sigla): ?Partido
+    private function resolverPartidoLegado(?string $sigla, ?int $legacyCandidatoId = null): ?Partido
     {
         $sigla = trim((string) $sigla);
+
+        if ($sigla === '' && $legacyCandidatoId !== null) {
+            $sigla = trim((string) config('politica.migracao_v1.partidos_legacy.'.$legacyCandidatoId, ''));
+        }
+
         if ($sigla === '') {
             return null;
         }

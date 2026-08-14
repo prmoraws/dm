@@ -13,7 +13,13 @@ class EspelhoInteligenteService
      * Resume o desempenho eleitoral agregado da cidade.
      * Quando cargoId é informado, evita comparar candidaturas de cargos diferentes.
      */
-    public function resumoCidade(Cidade $cidade, ?int $eleicaoId = null, ?int $cargoId = null, int $limiteRanking = 50): array
+    public function resumoCidade(
+        Cidade $cidade,
+        ?int $eleicaoId = null,
+        ?int $cargoId = null,
+        int $limiteRanking = 50,
+        ?string $partidoSigla = null
+    ): array
     {
         $query = ResultadoMunicipal::query()
             ->with(['candidatura.politico', 'candidatura.partido', 'candidatura.cargo'])
@@ -25,6 +31,23 @@ class EspelhoInteligenteService
 
         if ($cargoId !== null) {
             $query->whereHas('candidatura', fn ($q) => $q->where('cargo_id', $cargoId));
+        }
+
+        if ($partidoSigla !== null) {
+            $partidoSigla = mb_strtoupper(trim($partidoSigla), 'UTF-8');
+            $legacyIdsDoPartido = collect(config('politica.migracao_v1.partidos_legacy', []))
+                ->filter(fn ($sigla) => mb_strtoupper((string) $sigla, 'UTF-8') === $partidoSigla)
+                ->keys()
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $query->where(function ($q) use ($partidoSigla, $legacyIdsDoPartido): void {
+                $q->whereHas('candidatura.partido', fn ($partido) => $partido->where('sigla', $partidoSigla));
+
+                if ($legacyIdsDoPartido !== []) {
+                    $q->orWhereHas('candidatura', fn ($candidatura) => $candidatura->whereIn('legacy_candidato_id', $legacyIdsDoPartido));
+                }
+            });
         }
 
         $limiteRanking = max(2, min($limiteRanking, 100));
@@ -49,6 +72,7 @@ class EspelhoInteligenteService
             'cidade' => $cidade->nome,
             'eleicao_id' => $eleicaoId,
             'cargo_id' => $cargoId,
+            'partido_filtro' => $partidoSigla,
             'total_votos_candidatos' => $totalVotosCandidatos,
             'lider' => $this->resultadoParaResumo($lider),
             'segundo' => $this->resultadoParaResumo($segundo),
@@ -68,11 +92,16 @@ class EspelhoInteligenteService
     /**
      * Espelho profissional: separa contexto operacional interno de dados eleitorais derivados.
      */
-    public function panoramaCidade(Cidade $cidade, ?int $eleicaoId = null, ?int $cargoId = null): array
+    public function panoramaCidade(
+        Cidade $cidade,
+        ?int $eleicaoId = null,
+        ?int $cargoId = null,
+        ?string $partidoSigla = null
+    ): array
     {
         $cidade->loadMissing('espelhoOperacional');
         $operacional = $cidade->espelhoOperacional;
-        $eleitoral = $this->resumoCidade($cidade, $eleicaoId, $cargoId);
+        $eleitoral = $this->resumoCidade($cidade, $eleicaoId, $cargoId, 50, $partidoSigla);
 
         return [
             'cidade' => [
