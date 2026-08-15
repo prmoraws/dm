@@ -123,6 +123,7 @@
                                     ['route' => 'politica.acompanhamento', 'label' => 'Acompanhamento'],
                                     ['route' => 'politica.cidades', 'label' => 'Espelho Inteligente'],
                                     ['route' => 'politica.mapa', 'label' => 'Mapa Eleitoral'],
+                                    ['route' => 'politica.dados-oficiais', 'label' => 'Dados Oficiais TSE'],
                                 ],
                             ],
                             'Secretaria' => [

@@ -23,11 +23,12 @@ class PoliticaV2ExperienciaTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function espelho_legislativo_prioriza_republicanos_e_executivo_mostra_todos(): void
+    public function espelho_prioriza_republicanos_inclusive_prefeito_e_mostra_todos_em_presidente(): void
     {
         $cidade = Cidade::query()->create(['nome' => 'Salvador', 'latitude' => -12.97, 'longitude' => -38.50]);
         $eleicao = Eleicao::query()->create(['ano' => 2026, 'turno' => 1, 'tipo' => 'geral', 'descricao' => 'Eleições Gerais 2026']);
         $deputado = Cargo::query()->create(['tse_codigo' => '0006', 'nome' => 'Deputado Federal', 'ordem' => 40]);
+        $prefeito = Cargo::query()->create(['tse_codigo' => '0011', 'nome' => 'Prefeito', 'ordem' => 60]);
         $presidente = Cargo::query()->create(['tse_codigo' => '0001', 'nome' => 'Presidente', 'ordem' => 10]);
         $republicanos = Partido::query()->create(['numero' => 10, 'sigla' => 'REPUBLICANOS', 'nome' => 'Republicanos']);
         $outro = Partido::query()->create(['numero' => 99, 'sigla' => 'OUTRO', 'nome' => 'Outro']);
@@ -35,12 +36,16 @@ class PoliticaV2ExperienciaTest extends TestCase
         $rep = Politico::query()->create(['nome_completo' => 'Candidato Republicanos', 'nome_publico' => 'Candidato Republicanos', 'slug' => 'candidato-republicanos']);
         $repZero = Politico::query()->create(['nome_completo' => 'Republicanos Sem Votos', 'nome_publico' => 'Republicanos Sem Votos', 'slug' => 'republicanos-sem-votos']);
         $depOutro = Politico::query()->create(['nome_completo' => 'Deputado Outro', 'nome_publico' => 'Deputado Outro', 'slug' => 'deputado-outro']);
+        $prefRep = Politico::query()->create(['nome_completo' => 'Prefeito Republicanos', 'nome_publico' => 'Prefeito Republicanos', 'slug' => 'prefeito-republicanos']);
+        $prefOutro = Politico::query()->create(['nome_completo' => 'Prefeito Outro', 'nome_publico' => 'Prefeito Outro', 'slug' => 'prefeito-outro']);
         $presA = Politico::query()->create(['nome_completo' => 'Presidente A', 'nome_publico' => 'Presidente A', 'slug' => 'presidente-a']);
         $presB = Politico::query()->create(['nome_completo' => 'Presidente B', 'nome_publico' => 'Presidente B', 'slug' => 'presidente-b']);
 
         $cRep = Candidatura::query()->create(['politico_id' => $rep->id, 'eleicao_id' => $eleicao->id, 'cargo_id' => $deputado->id, 'partido_id' => $republicanos->id, 'votos_total' => 100, 'origem' => 'tse']);
         Candidatura::query()->create(['politico_id' => $repZero->id, 'eleicao_id' => $eleicao->id, 'cargo_id' => $deputado->id, 'partido_id' => $republicanos->id, 'votos_total' => 0, 'origem' => 'tse']);
         $cOutro = Candidatura::query()->create(['politico_id' => $depOutro->id, 'eleicao_id' => $eleicao->id, 'cargo_id' => $deputado->id, 'partido_id' => $outro->id, 'votos_total' => 90, 'origem' => 'tse']);
+        Candidatura::query()->create(['politico_id' => $prefRep->id, 'eleicao_id' => $eleicao->id, 'cargo_id' => $prefeito->id, 'partido_id' => $republicanos->id, 'cidade_id' => $cidade->id, 'votos_total' => 80, 'origem' => 'tse']);
+        Candidatura::query()->create(['politico_id' => $prefOutro->id, 'eleicao_id' => $eleicao->id, 'cargo_id' => $prefeito->id, 'partido_id' => $outro->id, 'cidade_id' => $cidade->id, 'votos_total' => 70, 'origem' => 'tse']);
         $cPresA = Candidatura::query()->create(['politico_id' => $presA->id, 'eleicao_id' => $eleicao->id, 'cargo_id' => $presidente->id, 'partido_id' => $republicanos->id, 'votos_total' => 200, 'origem' => 'tse']);
         $cPresB = Candidatura::query()->create(['politico_id' => $presB->id, 'eleicao_id' => $eleicao->id, 'cargo_id' => $presidente->id, 'partido_id' => $outro->id, 'votos_total' => 180, 'origem' => 'tse']);
 
@@ -61,6 +66,10 @@ class PoliticaV2ExperienciaTest extends TestCase
             ->assertSee('Filtro: REPUBLICANOS')
             ->set('escopoCandidatos', 'todos')
             ->assertSee('Deputado Outro')
+            ->set('cargoId', $prefeito->id)
+            ->assertSee('Prefeito Republicanos')
+            ->assertDontSee('Prefeito Outro')
+            ->assertSee('Filtro: REPUBLICANOS')
             ->set('cargoId', $presidente->id)
             ->assertSee('Presidente A')
             ->assertSee('Presidente B')

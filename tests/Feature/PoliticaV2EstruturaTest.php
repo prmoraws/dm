@@ -27,7 +27,7 @@ class PoliticaV2EstruturaTest extends TestCase
             'politica_zonas', 'politica_secoes', 'politica_resultados_municipais', 'politica_resultados_zonas',
             'politica_resultados_secoes', 'politica_fontes_estado', 'politica_apuracoes',
             'politica_apuracao_candidaturas', 'politica_apuracao_historico', 'politica_espelho_inteligencia',
-            'politica_espelho_operacional', 'politica_migracoes_dados',
+            'politica_espelho_operacional', 'politica_migracoes_dados', 'politica_tse_importacoes',
         ] as $table) {
             $this->assertTrue(Schema::hasTable($table), "Tabela {$table} não foi criada.");
         }
@@ -37,7 +37,18 @@ class PoliticaV2EstruturaTest extends TestCase
     public function cidades_expoem_coordenadas_necessarias_para_o_mapa_v2(): void
     {
         $this->assertTrue(Schema::hasColumns('politica_cidades', [
-            'nome', 'ibge_code', 'latitude', 'longitude', 'populacao',
+            'nome', 'ibge_code', 'tse_codigo', 'latitude', 'longitude', 'populacao',
+        ]));
+    }
+
+
+    #[Test]
+    public function estrutura_tse_mantem_identificacao_e_auditoria_de_importacao(): void
+    {
+        $this->assertTrue(Schema::hasColumn('politica_politicos', 'identidade_publica_hash'));
+        $this->assertTrue(Schema::hasColumns('politica_tse_importacoes', [
+            'execucao', 'ano', 'uf', 'tipo', 'escopo', 'status', 'sha256',
+            'linhas_lidas', 'linhas_selecionadas', 'inseridos', 'atualizados', 'ignorados',
         ]));
     }
 

@@ -20,6 +20,7 @@ class Cidade extends Model
     protected $fillable = [
         'nome',
         'ibge_code',
+        'tse_codigo',
         'latitude', // Adicionado
         'longitude', // Adicionado
         'populacao',

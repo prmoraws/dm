@@ -12,7 +12,7 @@ class Politico extends Model
     protected $table = 'politica_politicos';
 
     protected $fillable = [
-        'nome_completo', 'nome_publico', 'slug', 'data_nascimento', 'uf_nascimento',
+        'nome_completo', 'nome_publico', 'slug', 'identidade_publica_hash', 'data_nascimento', 'uf_nascimento',
         'foto_url', 'biografia', 'links', 'ativo',
     ];
 

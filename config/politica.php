@@ -14,6 +14,83 @@ return [
         ],
     ],
 
+    'tse' => [
+        // Dados Abertos oficiais. Os arquivos são baixados uma vez, processados em CLI
+        // e mantidos fora de public/ para não sobrecarregar o servidor web.
+        'disk' => env('POLITICA_TSE_DISK', 'local'),
+        'path' => env('POLITICA_TSE_PATH', 'politica/tse'),
+        'connect_timeout' => (int) env('POLITICA_TSE_CONNECT_TIMEOUT', 10),
+        'download_timeout' => (int) env('POLITICA_TSE_DOWNLOAD_TIMEOUT', 300),
+        'cleanup_after_success' => (bool) env('POLITICA_TSE_CLEANUP_AFTER_SUCCESS', true),
+        'scope' => [
+            'partido_prioritario' => env('POLITICA_PARTIDO_PRIORITARIO', 'REPUBLICANOS'),
+            'somente_partido' => [
+                'Vereador',
+                'Prefeito',
+                'Deputado Estadual',
+                'Deputado Federal',
+                'Senador',
+            ],
+            'todos' => [
+                'Governador',
+                'Presidente',
+            ],
+        ],
+        'storage' => [
+            'warning_mb' => (int) env('POLITICA_TSE_STORAGE_WARNING_MB', 500),
+            'hard_limit_mb' => (int) env('POLITICA_TSE_STORAGE_HARD_LIMIT_MB', 900),
+            // Estimativas conservadoras já incluindo margem para índices/overhead do InnoDB.
+            'candidate_row_estimate_bytes' => (int) env('POLITICA_TSE_CANDIDATE_ROW_ESTIMATE_BYTES', 4096),
+            'result_row_estimate_bytes' => (int) env('POLITICA_TSE_RESULT_ROW_ESTIMATE_BYTES', 900),
+        ],
+        'sources' => [
+            'candidaturas' => env(
+                'POLITICA_TSE_CANDIDATURAS_URL',
+                'https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_%d.zip'
+            ),
+            'resultados' => env(
+                'POLITICA_TSE_RESULTADOS_URL',
+                'https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_%d.zip'
+            ),
+        ],
+        // Nomes oficiais/nomes de urna usados para vincular a fonte TSE aos oito
+        // acompanhamentos já existentes, sem criar pessoas duplicadas.
+        'prioritarios_aliases' => [
+            'rogeria-santos' => [
+                'ROGERIA DE ALMEIDA PEREIRA DOS SANTOS',
+                'ROGERIA SANTOS',
+            ],
+            'marcio-marinho' => [
+                'MARCIO CARLOS MARINHO',
+                'MARCIO MARINHO',
+            ],
+            'jurailton-santos' => [
+                'JURAILTON DE SOUSA SANTOS',
+                'JURAILTON SANTOS',
+            ],
+            'jose-de-arimateia' => [
+                'JOSE DE ARIMATEIA CORIOLANO DE PAIVA',
+                'JOSE DE ARIMATEIA',
+            ],
+            'lula' => [
+                'LUIZ INACIO LULA DA SILVA',
+                'LULA',
+            ],
+            'flavio-bolsonaro' => [
+                'FLAVIO NANTES BOLSONARO',
+                'FLAVIO BOLSONARO',
+            ],
+            'jeronimo-rodrigues' => [
+                'JERONIMO RODRIGUES SOUZA',
+                'JERONIMO RODRIGUES',
+            ],
+            'acm-neto' => [
+                'ANTONIO CARLOS PEIXOTO DE MAGALHAES NETO',
+                'ACM NETO',
+            ],
+        ],
+    ],
+
     'apuracao' => [
         // O intervalo final deve ser ajustado conforme a orientação técnica do TSE para o pleito.
         'poll_seconds' => (int) env('POLITICA_TSE_POLL_SECONDS', 10),
@@ -30,6 +107,7 @@ return [
         'partido_prioritario' => env('POLITICA_PARTIDO_PRIORITARIO', 'REPUBLICANOS'),
         'cargos_partido_prioritario' => [
             'Vereador',
+            'Prefeito',
             'Deputado Estadual',
             'Deputado Federal',
             'Senador',

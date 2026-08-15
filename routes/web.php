@@ -40,6 +40,7 @@ use App\Livewire\Politica\V2\PoliticoShow;
 use App\Livewire\Politica\V2\EspelhoInteligente;
 use App\Livewire\Politica\V2\EspelhoOperacionalEdit;
 use App\Livewire\Politica\V2\MapaInterativo;
+use App\Livewire\Politica\V2\DadosOficiais;
 use App\Http\Controllers\Universal\PessoaPrintController;
 use Illuminate\Support\Facades\Artisan;
 use App\Livewire\Unp\FormularioBatismo;
@@ -175,6 +176,7 @@ Route::middleware([
 
         Route::get('/espelho/{cidade}/editar', EspelhoOperacionalEdit::class)->name('politica.espelho.edit');
         Route::get('/mapa', MapaInterativo::class)->name('politica.mapa');
+        Route::get('/dados-oficiais', DadosOficiais::class)->name('politica.dados-oficiais');
 
         // Rotas legadas preservadas apenas para auditoria/transição.
         Route::get('/legado/cidade/{cidade}', CityView::class)->name('politica.legado.cidade.view');

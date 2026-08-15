@@ -56,3 +56,4 @@ id_rsa.ppk
 /*.backup
 /*.backup-*
 /storage/framework/cache/
+/storage/app/private/politica/tse/

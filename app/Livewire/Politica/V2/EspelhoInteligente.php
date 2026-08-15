@@ -136,7 +136,7 @@ class EspelhoInteligente extends Component
         }
 
         if (! $this->cargoUsaFiltroRepublicanos()) {
-            // Presidente, governador e demais cargos executivos sempre exibem todos.
+            // Presidente e governador sempre exibem todos; prefeito segue o filtro partidário configurado.
             $this->escopoCandidatos = 'todos';
             return;
         }
