@@ -73,13 +73,22 @@ class TseOfficialSyncService
                 continue;
             }
 
-            $candidateKey = ($this->value($row, 'CD_ELEICAO') ?: $ano).'|'.($this->value($row, 'SQ_CANDIDATO') ?: '');
+            $identidade = $this->candidateIdentity($ano, $uf, $cargo, $row);
+            $candidateKey = $this->candidateIdentityMapKey($identidade, $cargo);
+            if ($candidateKey === null) {
+                $stats['sem_identificador_oficial'] = ($stats['sem_identificador_oficial'] ?? 0) + 1;
+                $stats['ignorados']++;
+                continue;
+            }
             if (isset($seen[$candidateKey])) {
                 $stats['ignorados']++;
                 continue;
             }
             $seen[$candidateKey] = true;
 
+            if ($identidade['sq'] === null || $this->isMunicipalCargo($cargo)) {
+                $stats['identificadores_historicos'] = ($stats['identificadores_historicos'] ?? 0) + 1;
+            }
             $stats['linhas_selecionadas']++;
             $cargos[$cargo] = ($cargos[$cargo] ?? 0) + 1;
             $sigla = strtoupper(trim((string) ($row['SG_PARTIDO'] ?? '')));
@@ -116,13 +125,22 @@ class TseOfficialSyncService
                     continue;
                 }
 
-                $candidateKey = ($this->value($row, 'CD_ELEICAO') ?: $ano).'|'.($this->value($row, 'SQ_CANDIDATO') ?: '');
+                $identidade = $this->candidateIdentity($ano, $uf, $cargoNome, $row);
+                $candidateKey = $this->candidateIdentityMapKey($identidade, $cargoNome);
+                if ($candidateKey === null) {
+                    $stats['sem_identificador_oficial'] = ($stats['sem_identificador_oficial'] ?? 0) + 1;
+                    $stats['ignorados']++;
+                    continue;
+                }
                 if (isset($seen[$candidateKey])) {
                     $stats['ignorados']++;
                     continue;
                 }
                 $seen[$candidateKey] = true;
 
+                if ($identidade['sq'] === null || $this->isMunicipalCargo($cargoNome)) {
+                    $stats['identificadores_historicos'] = ($stats['identificadores_historicos'] ?? 0) + 1;
+                }
                 $stats['linhas_selecionadas']++;
                 $cargo = $this->resolverCargo($cargoNome, $row['CD_CARGO'] ?? null);
                 $eleicao = $this->resolverEleicao($ano, $uf, $cargoNome, $row);
@@ -130,16 +148,31 @@ class TseOfficialSyncService
                 $cidade = $this->resolverCidadeCandidatura($cargoNome, $row, $cityMap);
                 $politico = $this->resolverPolitico($row, $cargo, $eleicao, $cidade, $prioritarios);
 
-                $sq = $this->value($row, 'SQ_CANDIDATO');
-                if ($sq === null) {
-                    $stats['ignorados']++;
-                    continue;
-                }
+                $sq = $identidade['sq'];
+                $historica = $identidade['historica'];
 
-                $existing = Candidatura::query()
-                    ->where('eleicao_id', $eleicao->id)
-                    ->where('tse_sq_candidato', $sq)
-                    ->first();
+                $existing = null;
+                // Em eleições municipais antigas o SQ_CANDIDATO pode se repetir entre
+                // municípios. A chave composta (cargo + município + número) é a identidade
+                // segura e deve ter prioridade nesses cargos.
+                if ($this->isMunicipalCargo($cargoNome) && $historica !== null) {
+                    $existing = Candidatura::query()
+                        ->where('eleicao_id', $eleicao->id)
+                        ->where('tse_chave_historica', $historica)
+                        ->first();
+                }
+                if (! $existing && ! $this->isMunicipalCargo($cargoNome) && $sq !== null) {
+                    $existing = Candidatura::query()
+                        ->where('eleicao_id', $eleicao->id)
+                        ->where('tse_sq_candidato', $sq)
+                        ->first();
+                }
+                if (! $existing && ! $this->isMunicipalCargo($cargoNome) && $historica !== null) {
+                    $existing = Candidatura::query()
+                        ->where('eleicao_id', $eleicao->id)
+                        ->where('tse_chave_historica', $historica)
+                        ->first();
+                }
 
                 if (! $existing) {
                     $existing = Candidatura::query()
@@ -156,6 +189,7 @@ class TseOfficialSyncService
                     'cargo_id' => $cargo->id,
                     'partido_id' => $partido?->id,
                     'tse_sq_candidato' => $sq,
+                    'tse_chave_historica' => $historica,
                     'numero_urna' => $this->value($row, 'NR_CANDIDATO'),
                     'nome_urna' => $this->value($row, 'NM_URNA_CANDIDATO') ?: $politico->nome_publico,
                     'uf' => $cargoNome === 'Presidente' ? 'BR' : $uf,
@@ -165,7 +199,7 @@ class TseOfficialSyncService
                     // o identificador oficial passa a ser tse_sq_candidato.
                     'origem_chave' => $existing?->legacy_candidato_id
                         ? $existing->origem_chave
-                        : implode(':', ['tse', $ano, $eleicao->tse_eleicao_codigo ?: $eleicao->id, $sq]),
+                        : implode(':', ['tse', $ano, $eleicao->tse_eleicao_codigo ?: $eleicao->id, $sq ?: 'hist-'.$historica]),
                     'situacao_registro' => $this->value($row, 'DS_SITUACAO_CANDIDATURA')
                         ?: $this->value($row, 'DS_DETALHE_SITUACAO_CAND'),
                     'coligacao' => $this->value($row, 'NM_COLIGACAO') ?: $this->value($row, 'DS_COMPOSICAO_COLIGACAO'),
@@ -186,6 +220,7 @@ class TseOfficialSyncService
             $stats['estimativa_banco'] = $this->storage->human($stats['estimativa_banco_bytes']);
             $this->finishImport($importacao, $stats);
             Cache::forget('politica:v2:dashboard:resumo');
+            Cache::forget('politica:v2:eleicoes-2026:resumo');
 
             return $stats;
         } catch (Throwable $e) {
@@ -197,40 +232,58 @@ class TseOfficialSyncService
     public function diagnosticarResultados(int $ano, string $uf, string $escopo, string $arquivo): array
     {
         $stats = $this->baseStats($ano, $uf, 'resultados', $escopo, $arquivo);
-        $sqSet = $this->candidateSqSet($ano, $escopo);
-        if ($sqSet === []) {
+        $templates = $this->candidateTemplateMaps($ano, $escopo);
+        if ($templates['sq'] === [] && $templates['historica'] === []) {
             throw new RuntimeException("Nenhuma candidatura TSE do escopo {$escopo} foi encontrada para {$ano}. Sincronize candidaturas primeiro.");
         }
         $municipios = [];
         $municipalRows = [];
         $zoneRows = [];
+        $seenResultRows = [];
 
         foreach ($this->reader->rows($arquivo) as $row) {
             $stats['linhas_lidas']++;
-            $sq = $this->value($row, 'SQ_CANDIDATO');
-            if ($sq === null || ! isset($sqSet[$sq])) {
+            $cargo = $this->cargoCanonico($row['DS_CARGO'] ?? null);
+            if (! $cargo) {
                 $stats['ignorados']++;
                 continue;
             }
 
-            $cargo = $this->cargoCanonico($row['DS_CARGO'] ?? null);
             $rowUf = strtoupper((string) ($row['SG_UF'] ?? ''));
             if ($cargo !== 'Presidente' && $rowUf !== strtoupper($uf)) {
                 $stats['ignorados']++;
                 continue;
             }
 
+            $template = $this->candidateTemplateForRow($ano, $uf, $cargo, $row, $templates);
+            if (! $template) {
+                $stats['ignorados']++;
+                continue;
+            }
+
+            $rowIdentity = $this->resultRowIdentity($ano, $cargo, $row, $template);
+            if (isset($seenResultRows[$rowIdentity])) {
+                $stats['linhas_duplicadas_descartadas'] = ($stats['linhas_duplicadas_descartadas'] ?? 0) + 1;
+                continue;
+            }
+            $seenResultRows[$rowIdentity] = true;
+
+            $matchKey = $this->isMunicipalCargo($cargo) && $template->tse_chave_historica
+                ? 'hist:'.$template->tse_chave_historica
+                : ($template->tse_sq_candidato
+                ? 'sq:'.$template->tse_sq_candidato
+                : 'hist:'.$template->tse_chave_historica);
             $stats['linhas_selecionadas']++;
             if ($rowUf === strtoupper($uf)) {
                 $municipio = $this->value($row, 'NM_MUNICIPIO');
                 if ($municipio) {
                     $municipioKey = $this->normalize($municipio);
                     $municipios[$municipioKey] = true;
-                    $municipalRows[$sq.'|'.$municipioKey] = true;
+                    $municipalRows[$matchKey.'|'.$municipioKey] = true;
 
                     $zona = (int) ($row['NR_ZONA'] ?? 0);
                     if ($zona > 0) {
-                        $zoneRows[$sq.'|'.$municipioKey.'|'.$zona] = true;
+                        $zoneRows[$matchKey.'|'.$municipioKey.'|'.$zona] = true;
                     }
                 }
             }
@@ -247,8 +300,8 @@ class TseOfficialSyncService
 
     public function sincronizarResultados(int $ano, string $uf, string $escopo, string $arquivo, bool $ignorarLimite = false): array
     {
-        $templates = $this->candidateTemplatesBySq($ano, $escopo);
-        if ($templates === []) {
+        $templates = $this->candidateTemplateMaps($ano, $escopo);
+        if ($templates['sq'] === [] && $templates['historica'] === []) {
             throw new RuntimeException("Nenhuma candidatura TSE do escopo {$escopo} foi encontrada para {$ano}. Sincronize candidaturas primeiro.");
         }
 
@@ -262,16 +315,11 @@ class TseOfficialSyncService
         $totals = [];
         $situacoes = [];
         $candidaturasAfetadas = [];
+        $seenResultRows = [];
 
         try {
             foreach ($this->reader->rows($arquivo) as $row) {
                 $stats['linhas_lidas']++;
-                $sq = $this->value($row, 'SQ_CANDIDATO');
-                if ($sq === null || ! isset($templates[$sq])) {
-                    $stats['ignorados']++;
-                    continue;
-                }
-
                 $cargoNome = $this->cargoCanonico($row['DS_CARGO'] ?? null);
                 if (! $cargoNome) {
                     $stats['ignorados']++;
@@ -284,9 +332,21 @@ class TseOfficialSyncService
                     continue;
                 }
 
-                $template = $templates[$sq];
+                $template = $this->candidateTemplateForRow($ano, $uf, $cargoNome, $row, $templates);
+                if (! $template) {
+                    $stats['ignorados']++;
+                    continue;
+                }
+
+                $rowIdentity = $this->resultRowIdentity($ano, $cargoNome, $row, $template);
+                if (isset($seenResultRows[$rowIdentity])) {
+                    $stats['linhas_duplicadas_descartadas'] = ($stats['linhas_duplicadas_descartadas'] ?? 0) + 1;
+                    continue;
+                }
+                $seenResultRows[$rowIdentity] = true;
+
                 $candidatura = $this->resolverCandidaturaResultado($ano, $uf, $cargoNome, $row, $template);
-                $votes = max(0, (int) ($row['QT_VOTOS_NOMINAIS'] ?? $row['QT_VOTOS'] ?? 0));
+                $votes = $this->voteValue($row);
                 $stats['linhas_selecionadas']++;
                 $candidaturasAfetadas[$candidatura->id] = true;
                 $totals[$candidatura->id] = ($totals[$candidatura->id] ?? 0) + $votes;
@@ -401,6 +461,7 @@ class TseOfficialSyncService
             $stats['inseridos'] = count($municipal) + count($zonal);
             $this->finishImport($importacao, $stats);
             Cache::forget('politica:v2:dashboard:resumo');
+            Cache::forget('politica:v2:eleicoes-2026:resumo');
 
             return $stats;
         } catch (Throwable $e) {
@@ -449,6 +510,15 @@ class TseOfficialSyncService
             return $isPrioritario;
         }
 
+        if (in_array($escopo, ['historico-especial', 'historico_especial'], true)) {
+            $slug = $this->prioritarioSlugParaRow($row);
+            return $slug !== null && in_array(
+                $slug,
+                (array) config('politica.tse.historico_especial.slugs', []),
+                true
+            );
+        }
+
         $allCargos = (array) config('politica.tse.scope.todos', ['Governador', 'Presidente']);
         if (in_array($cargo, $allCargos, true)) {
             return true;
@@ -486,14 +556,14 @@ class TseOfficialSyncService
             'esfera' => in_array($cargoNome, ['Presidente', 'Senador', 'Deputado Federal'], true) ? 'federal'
                 : (in_array($cargoNome, ['Governador', 'Deputado Estadual'], true) ? 'estadual' : 'municipal'),
             'abrangencia' => $cargoNome === 'Presidente' ? 'nacional'
-                : (in_array($cargoNome, ['Prefeito', 'Vereador'], true) ? 'municipio' : 'uf'),
+                : (in_array($cargoNome, ['Prefeito', 'Vice-Prefeito', 'Vereador'], true) ? 'municipio' : 'uf'),
             'ativo' => true,
         ]);
     }
 
     private function resolverEleicao(int $ano, string $uf, string $cargo, array $row): Eleicao
     {
-        $tipo = in_array($cargo, ['Prefeito', 'Vereador'], true) ? 'municipal' : 'geral';
+        $tipo = in_array($cargo, ['Prefeito', 'Vice-Prefeito', 'Vereador'], true) ? 'municipal' : 'geral';
         $turno = max(1, (int) ($row['NR_TURNO'] ?? 1));
         $codigo = $this->value($row, 'CD_ELEICAO');
 
@@ -538,25 +608,67 @@ class TseOfficialSyncService
         }
 
         $numero = $this->positiveInt($row['NR_PARTIDO'] ?? null);
-        $partido = Partido::query()->where('sigla', $sigla)->first();
-        if (! $partido && $numero) {
-            $partido = Partido::query()->where('numero', $numero)->first();
-        }
-        $payload = [
-            'numero' => $numero,
-            'nome' => $this->value($row, 'NM_PARTIDO') ?: $sigla,
-            'ativo' => true,
-        ];
+        $nome = $this->value($row, 'NM_PARTIDO') ?: $sigla;
 
-        if ($partido) {
-            if ($partido->sigla !== $sigla && ! Partido::query()->where('sigla', $sigla)->exists()) {
-                $partido->sigla = $sigla;
+        // Em bases históricas o mesmo partido pode aparecer com uma sigla anterior
+        // mantendo o número partidário atual (ex.: PRB -> REPUBLICANOS, ambos nº 10).
+        // politica_partidos.numero é UNIQUE; portanto uma sigla histórica não pode
+        // tomar o número já pertencente à identidade partidária atual. Preservamos
+        // as duas siglas para que a candidatura histórica continue fiel ao TSE e
+        // deixamos o número somente no registro canônico que já o possui.
+        $porSigla = Partido::query()->where('sigla', $sigla)->first();
+        if ($porSigla) {
+            $numeroPertenceAOutro = $numero
+                ? Partido::query()
+                    ->where('numero', $numero)
+                    ->whereKeyNot($porSigla->getKey())
+                    ->exists()
+                : false;
+
+            $payload = [
+                'nome' => $nome,
+                'ativo' => true,
+            ];
+            if ($numero && ! $numeroPertenceAOutro) {
+                $payload['numero'] = $numero;
             }
-            $partido->fill(array_filter($payload, fn ($v) => $v !== null))->save();
-            return $partido;
+
+            $porSigla->fill($payload)->save();
+
+            return $porSigla;
         }
 
-        return Partido::query()->create(['sigla' => $sigla] + $payload);
+        if ($numero) {
+            $porNumero = Partido::query()->where('numero', $numero)->first();
+            if ($porNumero) {
+                if ($porNumero->sigla === $sigla) {
+                    $porNumero->fill([
+                        'nome' => $nome,
+                        'ativo' => true,
+                    ])->save();
+
+                    return $porNumero;
+                }
+
+                // A sigla recebida é histórica/alternativa para um número que já
+                // possui dono canônico. Criamos a identidade histórica sem repetir
+                // o número; assim REPUBLICANOS nº 10 não é renomeado para PRB e a
+                // candidatura antiga continua apontando para PRB.
+                return Partido::query()->create([
+                    'numero' => null,
+                    'sigla' => $sigla,
+                    'nome' => $nome,
+                    'ativo' => true,
+                ]);
+            }
+        }
+
+        return Partido::query()->create([
+            'numero' => $numero,
+            'sigla' => $sigla,
+            'nome' => $nome,
+            'ativo' => true,
+        ]);
     }
 
     private function resolverPolitico(array $row, Cargo $cargo, Eleicao $eleicao, ?Cidade $cidade, array $prioritarios): Politico
@@ -614,7 +726,7 @@ class TseOfficialSyncService
 
     private function resolverCidadeCandidatura(string $cargo, array $row, array &$cityMap): ?Cidade
     {
-        if (! in_array($cargo, ['Prefeito', 'Vereador'], true)) {
+        if (! in_array($cargo, ['Prefeito', 'Vice-Prefeito', 'Vereador'], true)) {
             return null;
         }
 
@@ -658,10 +770,19 @@ class TseOfficialSyncService
             return $template;
         }
 
-        $existing = Candidatura::query()
-            ->where('eleicao_id', $eleicao->id)
-            ->where('tse_sq_candidato', $template->tse_sq_candidato)
-            ->first();
+        $existing = null;
+        if ($template->tse_sq_candidato) {
+            $existing = Candidatura::query()
+                ->where('eleicao_id', $eleicao->id)
+                ->where('tse_sq_candidato', $template->tse_sq_candidato)
+                ->first();
+        }
+        if (! $existing && $template->tse_chave_historica) {
+            $existing = Candidatura::query()
+                ->where('eleicao_id', $eleicao->id)
+                ->where('tse_chave_historica', $template->tse_chave_historica)
+                ->first();
+        }
         if ($existing) {
             return $existing;
         }
@@ -672,12 +793,18 @@ class TseOfficialSyncService
             'cargo_id' => $template->cargo_id,
             'partido_id' => $template->partido_id,
             'tse_sq_candidato' => $template->tse_sq_candidato,
+            'tse_chave_historica' => $template->tse_chave_historica,
             'numero_urna' => $template->numero_urna,
             'nome_urna' => $template->nome_urna,
             'uf' => $template->uf,
             'cidade_id' => $template->cidade_id,
             'origem' => 'tse_dados_abertos',
-            'origem_chave' => implode(':', ['tse', $ano, $eleicao->tse_eleicao_codigo ?: $eleicao->id, $template->tse_sq_candidato]),
+            'origem_chave' => implode(':', [
+                'tse',
+                $ano,
+                $eleicao->tse_eleicao_codigo ?: $eleicao->id,
+                $template->tse_sq_candidato ?: 'hist-'.$template->tse_chave_historica,
+            ]),
             'situacao_registro' => $template->situacao_registro,
             'coligacao' => $template->coligacao,
             'federacao' => $template->federacao,
@@ -686,34 +813,166 @@ class TseOfficialSyncService
         ]);
     }
 
-    private function candidateSqSet(int $ano, string $escopo): array
-    {
-        return array_fill_keys(array_keys($this->candidateTemplatesBySq($ano, $escopo)), true);
-    }
-
-    /** @return array<string,Candidatura> */
-    private function candidateTemplatesBySq(int $ano, string $escopo): array
+    /**
+     * @return array{sq: array<string,Candidatura>, historica: array<string,Candidatura>}
+     */
+    private function candidateTemplateMaps(int $ano, string $escopo): array
     {
         $query = Candidatura::query()
             ->with(['cargo', 'partido', 'eleicao', 'politico.acompanhamento'])
-            ->whereNotNull('tse_sq_candidato')
+            ->where(function ($q): void {
+                $q->whereNotNull('tse_sq_candidato')
+                    ->orWhereNotNull('tse_chave_historica');
+            })
             ->whereHas('eleicao', fn ($q) => $q->where('ano', $ano));
 
-        $items = $query->get();
-        $map = [];
-        foreach ($items as $item) {
-            if ($escopo === 'todos' || $this->candidaturaInScope($item, $escopo)) {
-                $map[(string) $item->tse_sq_candidato] ??= $item;
+        $map = ['sq' => [], 'historica' => []];
+        foreach ($query->get() as $item) {
+            if ($escopo !== 'todos' && ! $this->candidaturaInScope($item, $escopo)) {
+                continue;
+            }
+
+            if ($item->tse_sq_candidato) {
+                $map['sq'][(string) $item->tse_sq_candidato] ??= $item;
+            }
+            if ($item->tse_chave_historica) {
+                $map['historica'][(string) $item->tse_chave_historica] ??= $item;
             }
         }
 
         return $map;
     }
 
+    /**
+     * @param array{sq: array<string,Candidatura>, historica: array<string,Candidatura>} $templates
+     */
+    private function candidateTemplateForRow(int $ano, string $uf, string $cargo, array $row, array $templates): ?Candidatura
+    {
+        $identidade = $this->candidateIdentity($ano, $uf, $cargo, $row);
+
+        // Em pleitos municipais antigos o SQ_CANDIDATO não é uma chave segura entre
+        // municípios. Nesses cargos nunca fazemos fallback para SQ quando a linha oferece
+        // a chave territorial composta; isso evita atribuir votos de homônimos/outros
+        // candidatos com o mesmo identificador local.
+        if ($this->isMunicipalCargo($cargo) && $identidade['historica'] !== null) {
+            return $templates['historica'][$identidade['historica']] ?? null;
+        }
+
+        if ($identidade['sq'] !== null && isset($templates['sq'][$identidade['sq']])) {
+            return $templates['sq'][$identidade['sq']];
+        }
+
+        if ($identidade['historica'] !== null && isset($templates['historica'][$identidade['historica']])) {
+            return $templates['historica'][$identidade['historica']];
+        }
+
+        return null;
+    }
+
+    /**
+     * Chave alternativa para layouts históricos que não oferecem SQ_CANDIDATO de forma
+     * consistente. Usa somente campos oficiais presentes tanto em candidatura quanto em
+     * votação: ano, cargo, abrangência e número do candidato.
+     *
+     * @return array{sq:?string,historica:?string}
+     */
+    private function candidateIdentity(int $ano, string $uf, string $cargo, array $row): array
+    {
+        $sq = $this->value($row, 'SQ_CANDIDATO');
+        $numero = $this->value($row, 'NR_CANDIDATO');
+        if ($numero === null) {
+            return ['sq' => $sq, 'historica' => null];
+        }
+
+        $abrangencia = strtoupper($uf);
+        if ($cargo === 'Presidente') {
+            $abrangencia = 'BR';
+        } elseif (in_array($cargo, ['Prefeito', 'Vice-Prefeito', 'Vereador'], true)) {
+            $municipio = $this->value($row, 'NM_UE') ?: $this->value($row, 'NM_MUNICIPIO');
+            $codigo = $this->value($row, 'SG_UE') ?: $this->value($row, 'CD_MUNICIPIO');
+            $abrangencia = $municipio
+                ? 'MUN:'.$this->normalize($municipio)
+                : ($codigo ? 'MUNCD:'.$this->normalize($codigo) : 'MUN:INDEFINIDO');
+        }
+
+        $numeroNormalizado = preg_replace('/\D+/', '', $numero) ?: $this->normalize($numero);
+        $historica = hash('sha256', implode('|', [
+            $ano,
+            $this->normalize($cargo),
+            $this->normalize($abrangencia),
+            $numeroNormalizado,
+        ]));
+
+        return ['sq' => $sq, 'historica' => $historica];
+    }
+
+    /** @param array{sq:?string,historica:?string} $identidade */
+    private function candidateIdentityMapKey(array $identidade, string $cargo): ?string
+    {
+        if ($this->isMunicipalCargo($cargo) && $identidade['historica'] !== null) {
+            return 'hist:'.$identidade['historica'];
+        }
+
+        if ($identidade['sq'] !== null) {
+            return 'sq:'.$identidade['sq'];
+        }
+
+        return $identidade['historica'] !== null ? 'hist:'.$identidade['historica'] : null;
+    }
+
+    private function isMunicipalCargo(string $cargo): bool
+    {
+        return in_array($cargo, ['Prefeito', 'Vice-Prefeito', 'Vereador'], true);
+    }
+
+    private function voteValue(array $row): int
+    {
+        foreach (['QT_VOTOS_NOMINAIS', 'QT_VOTOS_NOMINAIS_VALIDOS', 'QT_VOTOS'] as $campo) {
+            $valor = $this->value($row, $campo);
+            if ($valor === null || ! is_numeric($valor)) {
+                continue;
+            }
+
+            $votos = max(0, (int) $valor);
+            if ($votos > 0) {
+                return $votos;
+            }
+
+        }
+
+        return 0;
+    }
+
+    private function resultRowIdentity(int $ano, string $cargo, array $row, Candidatura $template): string
+    {
+        $municipio = $this->value($row, 'CD_MUNICIPIO')
+            ?: $this->value($row, 'SG_UE')
+            ?: $this->normalize((string) ($row['NM_MUNICIPIO'] ?? $row['NM_UE'] ?? 'SEM MUNICIPIO'));
+
+        return implode('|', [
+            $ano,
+            $this->normalize($cargo),
+            strtoupper((string) ($row['SG_UF'] ?? '')),
+            $this->value($row, 'CD_ELEICAO') ?: 'SEM-ELEICAO',
+            $this->value($row, 'NR_TURNO') ?: '1',
+            $template->id,
+            $municipio,
+            $this->value($row, 'NR_ZONA') ?: '0',
+        ]);
+    }
+
     private function candidaturaInScope(Candidatura $candidatura, string $escopo): bool
     {
         if ($escopo === 'prioritarios') {
             return $candidatura->politico?->acompanhamento?->ativo === true;
+        }
+
+        if (in_array($escopo, ['historico-especial', 'historico_especial'], true)) {
+            return in_array(
+                (string) $candidatura->politico?->slug,
+                (array) config('politica.tse.historico_especial.slugs', []),
+                true
+            );
         }
 
         $cargo = $candidatura->cargo?->nome;
@@ -784,6 +1043,8 @@ class TseOfficialSyncService
             'DEPUTADO ESTADUAL' => 'Deputado Estadual',
             'DEPUTADO DISTRITAL' => 'Deputado Estadual',
             'PREFEITO' => 'Prefeito',
+            'VICE PREFEITO' => 'Vice-Prefeito',
+            'VICE-PREFEITO' => 'Vice-Prefeito',
             'VEREADOR' => 'Vereador',
         ];
 

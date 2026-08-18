@@ -1,3 +1,4 @@
+@section('title', 'Política - Espelho - ' . $cidade->nome)
 <div>
     <x-slot name="header">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -35,6 +36,68 @@
                     <p class="mt-1 text-lg font-bold text-gray-900 sm:text-xl dark:text-white">{{ $ranking->total() > 0 ? number_format($ranking->total(), 0, ',', '.') : '—' }}</p>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400">candidatos no recorte</p>
                 </div>
+            </section>
+
+            <section class="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 shadow-sm sm:p-5 dark:border-indigo-900/60 dark:bg-indigo-950/20">
+                <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                    <div class="max-w-2xl">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700 dark:text-indigo-300">Relatório robusto por cidade</p>
+                        <h3 class="mt-1 text-lg font-bold text-gray-950 dark:text-white">Candidato favorito do Espelho</h3>
+                        <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">Selecione o candidato que será o foco do relatório. O PDF e o Excel incluem contexto municipal, espelho operacional, desempenho local, histórico do mesmo cargo, zonas, ranking e auditoria de integridade.</p>
+                    </div>
+
+                    <div class="w-full xl:max-w-xl">
+                        <label for="candidato-relatorio" class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Candidato do relatório</label>
+                        <select id="candidato-relatorio" wire:model.live="candidaturaRelatorioId" class="mt-1.5 w-full rounded-xl border-gray-300 bg-white text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            <option value="">Selecione um candidato</option>
+                            @foreach ($candidatosRelatorio as $opcaoRelatorio)
+                                <option value="{{ $opcaoRelatorio->id }}">
+                                    {{ $opcaoRelatorio->politico?->nome_publico ?? $opcaoRelatorio->nome_urna ?? 'Candidato' }} · {{ $opcaoRelatorio->partido?->sigla ?: (config('politica.migracao_v1.partidos_legacy.'.$opcaoRelatorio->legacy_candidato_id) ?: '—') }} · nº {{ $opcaoRelatorio->numero_urna ?: '—' }}
+                                    @if ($opcaoRelatorio->resultado_municipal_id)
+                                        · {{ number_format((int) $opcaoRelatorio->votos_no_municipio, 0, ',', '.') }} votos
+                                    @else
+                                        · sem resultado oficial
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                @if (session('politica_espelho_relatorio_ok'))
+                    <div class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">{{ session('politica_espelho_relatorio_ok') }}</div>
+                @endif
+                @if (session('politica_espelho_relatorio_erro'))
+                    <div class="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ session('politica_espelho_relatorio_erro') }}</div>
+                @endif
+
+                @if ($candidaturaRelatorio)
+                    <div class="mt-4 flex flex-col gap-3 rounded-xl border border-indigo-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-indigo-900/60 dark:bg-gray-900/60">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="truncate font-bold text-gray-950 dark:text-white">{{ $candidaturaRelatorio->politico?->nome_publico ?? $candidaturaRelatorio->nome_urna ?? 'Candidato' }}</p>
+                                @if ($favoritoRelatorio)
+                                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">{{ $favoritoRelatorio->classificacao === 'favorito' ? 'Favorito salvo' : 'Acompanhamento' }}</span>
+                                @endif
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                {{ $cargoSelecionado?->nome ?: 'Cargo' }} · {{ $candidaturaRelatorio->partido?->sigla ?: '—' }} · nº {{ $candidaturaRelatorio->numero_urna ?: '—' }}
+                                @if ($candidaturaRelatorio->resultado_municipal_id)
+                                    · {{ number_format((int) $candidaturaRelatorio->votos_no_municipio, 0, ',', '.') }} votos neste município
+                                @else
+                                    · sem resultado municipal oficial
+                                @endif
+                            </p>
+                        </div>
+                        <div class="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-3">
+                            <button type="button" wire:click="marcarFavoritoRelatorio" class="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50">★ Marcar favorito</button>
+                            <a href="{{ route('politica.espelho.relatorio.pdf', ['cidade' => $cidade, 'candidatura' => $candidaturaRelatorio->id]) }}" target="_blank" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-500">Exportar PDF</a>
+                            <a href="{{ route('politica.espelho.relatorio.excel', ['cidade' => $cidade, 'candidatura' => $candidaturaRelatorio->id]) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500">Exportar Excel</a>
+                        </div>
+                    </div>
+                @else
+                    <div class="mt-4 rounded-xl border border-dashed border-indigo-300 p-4 text-sm text-indigo-800 dark:border-indigo-800 dark:text-indigo-200">Selecione um candidato do recorte atual para habilitar o relatório por cidade. Se já houver favorito/acompanhamento salvo para este recorte, ele será selecionado automaticamente.</div>
+                @endif
             </section>
 
             <section class="grid gap-5 lg:grid-cols-3">

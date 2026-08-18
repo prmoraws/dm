@@ -1,3 +1,4 @@
+@section('title', 'Política - Dados Oficiais TSE')
 <div>
     <x-slot name="header">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -26,6 +27,54 @@
                 @endforeach
             </section>
 
+            <section class="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 shadow-sm sm:p-5 dark:border-indigo-900 dark:bg-indigo-950/20">
+                @php
+                    $pedidoTse = $tseSync['ultima_solicitacao'];
+                    $importacaoTse = $tseSync['ultima_importacao'];
+                    $statusTse = $pedidoTse?->status;
+                    $statusClasses = match ($statusTse) {
+                        'concluida' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+                        'erro' => 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
+                        'executando' => 'bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
+                        'pendente' => 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+                        default => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                    };
+                @endphp
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Sincronização oficial</p>
+                            <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $tseSync['scheduler_ativo'] ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300' }}">
+                                {{ $tseSync['scheduler_ativo'] ? 'Scheduler ativo' : 'Aguardando cron' }}
+                            </span>
+                        </div>
+                        <h3 class="mt-1 font-semibold text-gray-900 dark:text-white">Candidaturas TSE 2026</h3>
+                        <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">Atualização automática diária e atualização manual segura. O trabalho pesado nunca roda dentro da requisição do navegador.</p>
+                        <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span>Automática: <strong class="text-gray-800 dark:text-gray-200">{{ $tseSync['automatico_ativo'] ? 'ativada' : 'desativada' }}</strong></span>
+                            <span>Última importação: <strong class="text-gray-800 dark:text-gray-200">{{ $importacaoTse?->concluida_em?->format('d/m/Y H:i') ?? '—' }}</strong></span>
+                            <span>Pedido: <strong class="rounded-full px-2 py-0.5 {{ $statusClasses }}">{{ $statusTse ?? 'nenhum' }}</strong></span>
+                        </div>
+                        @if ($pedidoTse?->ultimo_erro)
+                            <p class="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-950/30 dark:text-rose-300">{{ \Illuminate\Support\Str::limit($pedidoTse->ultimo_erro, 250) }}</p>
+                        @endif
+                        @if (session('politica_tse_sync_message'))
+                            <p class="mt-3 rounded-xl bg-white/80 px-3 py-2 text-xs text-gray-700 dark:bg-gray-900/60 dark:text-gray-300">{{ session('politica_tse_sync_message') }}</p>
+                        @endif
+                    </div>
+                    <button
+                        type="button"
+                        wire:click="solicitarAtualizacaoTse2026"
+                        wire:loading.attr="disabled"
+                        wire:target="solicitarAtualizacaoTse2026"
+                        class="inline-flex w-full shrink-0 items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-wait disabled:opacity-60 lg:w-auto"
+                    >
+                        <span wire:loading.remove wire:target="solicitarAtualizacaoTse2026">Atualizar TSE agora</span>
+                        <span wire:loading wire:target="solicitarAtualizacaoTse2026">Enfileirando...</span>
+                    </button>
+                </div>
+            </section>
+
             <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 dark:border-gray-700 dark:bg-gray-800">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -50,6 +99,28 @@
                     </div>
                 </div>
             </section>
+
+            @if ($registro2026['total'] > 0)
+                <section class="rounded-2xl border p-4 shadow-sm sm:p-5 {{ $registro2026['antes_prazo'] ? 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30' : 'border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/30' }}">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider {{ $registro2026['antes_prazo'] ? 'text-amber-700 dark:text-amber-300' : 'text-sky-700 dark:text-sky-300' }}">Eleições 2026</p>
+                            <h3 class="mt-1 font-semibold text-gray-900 dark:text-white">{{ number_format($registro2026['total'], 0, ',', '.') }} registros de candidatura importados do TSE</h3>
+                            <p class="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300">
+                                @if ($registro2026['antes_prazo'])
+                                    Base ainda em período de recebimento de registros até {{ $registro2026['prazo']->format('d/m/Y H:i') }}. Faça nova sincronização após o fechamento.
+                                @else
+                                    Prazo formal encerrado; situações podem continuar sendo processadas e atualizadas pela Justiça Eleitoral.
+                                @endif
+                            </p>
+                        </div>
+                        <div class="rounded-xl bg-white/70 px-4 py-3 text-sm dark:bg-gray-900/50">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Última sincronização 2026</p>
+                            <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ $registro2026['ultima_sincronizacao']?->format('d/m/Y H:i') ?? '—' }}</p>
+                        </div>
+                    </div>
+                </section>
+            @endif
 
             <section class="grid gap-6 lg:grid-cols-3">
                 <div class="space-y-6 lg:col-span-2">

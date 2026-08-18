@@ -6,7 +6,7 @@ use App\Models\Politica\Cidade;
 use App\Models\Politica\V2\Candidatura;
 use App\Models\Politica\V2\Cargo;
 use App\Models\Politica\V2\Eleicao;
-use App\Models\Politica\V2\ResultadoMunicipal;
+use App\Models\Politica\V2\EspelhoInteligencia;
 use App\Services\Politica\V2\EspelhoInteligenteService as EspelhoService;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -17,6 +17,7 @@ use Livewire\WithPagination;
 class EspelhoInteligente extends Component
 {
     use WithPagination;
+
     public Cidade $cidade;
 
     #[Url(as: 'eleicao', except: null)]
@@ -27,6 +28,9 @@ class EspelhoInteligente extends Component
 
     #[Url(as: 'escopo', except: 'auto')]
     public string $escopoCandidatos = 'auto';
+
+    #[Url(as: 'favorito', except: null)]
+    public ?int $candidaturaRelatorioId = null;
 
     public function mount(Cidade $cidade): void
     {
@@ -42,6 +46,7 @@ class EspelhoInteligente extends Component
 
         $this->normalizarCargo();
         $this->normalizarEscopo();
+        $this->normalizarCandidaturaRelatorio();
     }
 
     public function updatedEleicaoId(): void
@@ -50,12 +55,14 @@ class EspelhoInteligente extends Component
         $this->cargoId = null;
         $this->normalizarCargo();
         $this->normalizarEscopo(true);
+        $this->normalizarCandidaturaRelatorio();
     }
 
     public function updatedCargoId(): void
     {
         $this->resetPage('rankingPage');
         $this->normalizarEscopo(true);
+        $this->normalizarCandidaturaRelatorio();
     }
 
     public function updatedEscopoCandidatos(): void
@@ -67,6 +74,54 @@ class EspelhoInteligente extends Component
         }
 
         $this->normalizarEscopo();
+        $this->normalizarCandidaturaRelatorio();
+    }
+
+    public function updatedCandidaturaRelatorioId(): void
+    {
+        $this->normalizarCandidaturaRelatorio();
+    }
+
+    public function marcarFavoritoRelatorio(): void
+    {
+        $this->normalizarCandidaturaRelatorio();
+
+        if (! $this->candidaturaRelatorioId) {
+            session()->flash('politica_espelho_relatorio_erro', 'Selecione um candidato válido no recorte atual.');
+            return;
+        }
+
+        $candidatura = Candidatura::query()->find($this->candidaturaRelatorioId);
+        if (! $candidatura) {
+            session()->flash('politica_espelho_relatorio_erro', 'Candidatura não localizada.');
+            return;
+        }
+
+        EspelhoInteligencia::query()
+            ->where('cidade_id', $this->cidade->id)
+            ->where('classificacao', 'favorito')
+            ->where('candidatura_id', '<>', $candidatura->id)
+            ->whereHas('candidatura', fn ($q) => $q
+                ->where('eleicao_id', $candidatura->eleicao_id)
+                ->where('cargo_id', $candidatura->cargo_id))
+            ->update(['classificacao' => 'acompanhamento', 'prioridade' => 2]);
+
+        EspelhoInteligencia::query()->updateOrCreate(
+            [
+                'cidade_id' => $this->cidade->id,
+                'contexto_chave' => 'eleicao:'.$candidatura->eleicao_id.':candidatura:'.$candidatura->id,
+            ],
+            [
+                'eleicao_id' => $candidatura->eleicao_id,
+                'candidatura_id' => $candidatura->id,
+                'responsavel_user_id' => auth()->id(),
+                'classificacao' => 'favorito',
+                'prioridade' => 1,
+                'revisado_em' => now(),
+            ]
+        );
+
+        session()->flash('politica_espelho_relatorio_ok', 'Candidato marcado como favorito deste espelho.');
     }
 
     private function normalizarCargo(): void
@@ -87,7 +142,6 @@ class EspelhoInteligente extends Component
     {
         return Candidatura::query()
             ->where(function ($query): void {
-                // Cargos estaduais/federais têm cidade_id nulo; cargos municipais pertencem à cidade.
                 $query->whereNull('cidade_id')
                     ->orWhere('cidade_id', $this->cidade->id);
             })
@@ -136,7 +190,6 @@ class EspelhoInteligente extends Component
         }
 
         if (! $this->cargoUsaFiltroRepublicanos()) {
-            // Presidente e governador sempre exibem todos; prefeito segue o filtro partidário configurado.
             $this->escopoCandidatos = 'todos';
             return;
         }
@@ -155,6 +208,94 @@ class EspelhoInteligente extends Component
         return $this->escopoCandidatos === 'todos'
             ? null
             : mb_strtoupper((string) config('politica.espelho.partido_prioritario', 'REPUBLICANOS'), 'UTF-8');
+    }
+
+    private function candidaturasRecorteQuery()
+    {
+        $query = Candidatura::query()
+            ->select('politica_candidaturas.*')
+            ->selectRaw('COALESCE(rm.votos, 0) as votos_no_municipio')
+            ->selectRaw('rm.percentual as percentual_no_municipio')
+            ->selectRaw('rm.posicao as posicao_no_municipio')
+            ->selectRaw('rm.id as resultado_municipal_id')
+            ->leftJoin('politica_resultados_municipais as rm', function ($join): void {
+                $join->on('rm.candidatura_id', '=', 'politica_candidaturas.id')
+                    ->where('rm.cidade_id', '=', $this->cidade->id);
+
+                if ($this->eleicaoId !== null) {
+                    $join->where('rm.eleicao_id', '=', $this->eleicaoId);
+                }
+            })
+            ->with(['politico', 'partido', 'cargo']);
+
+        if ($this->eleicaoId === null || $this->cargoId === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($this->eleicaoId !== null) {
+            $query->where('politica_candidaturas.eleicao_id', $this->eleicaoId);
+        }
+
+        if ($this->cargoId !== null) {
+            $query->where('politica_candidaturas.cargo_id', $this->cargoId);
+        }
+
+        $cargoSelecionado = $this->cargoSelecionado();
+        if (in_array($cargoSelecionado?->nome, ['Prefeito', 'Vereador'], true)) {
+            $query->where('politica_candidaturas.cidade_id', $this->cidade->id);
+        }
+
+        $partidoFiltro = $this->partidoFiltro();
+        if ($partidoFiltro !== null) {
+            $legacyIdsDoPartido = collect(config('politica.migracao_v1.partidos_legacy', []))
+                ->filter(fn ($sigla) => mb_strtoupper((string) $sigla, 'UTF-8') === $partidoFiltro)
+                ->keys()
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $query->where(function ($q) use ($partidoFiltro, $legacyIdsDoPartido): void {
+                $q->whereHas('partido', fn ($partido) => $partido->where('sigla', $partidoFiltro));
+
+                if ($legacyIdsDoPartido !== []) {
+                    $q->orWhereIn('politica_candidaturas.legacy_candidato_id', $legacyIdsDoPartido);
+                }
+            });
+        }
+
+        return $query;
+    }
+
+    private function normalizarCandidaturaRelatorio(): void
+    {
+        $ids = (clone $this->candidaturasRecorteQuery())
+            ->get()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($this->candidaturaRelatorioId !== null && $ids->contains((int) $this->candidaturaRelatorioId)) {
+            $this->candidaturaRelatorioId = (int) $this->candidaturaRelatorioId;
+            return;
+        }
+
+        $this->candidaturaRelatorioId = null;
+
+        if ($ids->isEmpty()) {
+            return;
+        }
+
+        $favorito = EspelhoInteligencia::query()
+            ->where('cidade_id', $this->cidade->id)
+            ->whereIn('candidatura_id', $ids->all())
+            ->whereIn('classificacao', ['favorito', 'acompanhamento'])
+            ->orderByRaw("CASE WHEN classificacao = 'favorito' THEN 0 ELSE 1 END")
+            ->orderBy('prioridade')
+            ->value('candidatura_id');
+
+        if ($favorito) {
+            $this->candidaturaRelatorioId = (int) $favorito;
+        }
     }
 
     public function render(EspelhoService $service)
@@ -179,55 +320,8 @@ class EspelhoInteligente extends Component
             $partidoFiltro
         );
 
-        // O ranking parte das candidaturas, e não dos resultados. Assim candidatos com 0 voto
-        // no município também aparecem, como deve ocorrer em um espelho completo do cargo/partido.
-        $rankingQuery = Candidatura::query()
-            ->select('politica_candidaturas.*')
-            ->selectRaw('COALESCE(rm.votos, 0) as votos_no_municipio')
-            ->selectRaw('rm.percentual as percentual_no_municipio')
-            ->selectRaw('rm.posicao as posicao_no_municipio')
-            ->leftJoin('politica_resultados_municipais as rm', function ($join): void {
-                $join->on('rm.candidatura_id', '=', 'politica_candidaturas.id')
-                    ->where('rm.cidade_id', '=', $this->cidade->id);
-
-                if ($this->eleicaoId !== null) {
-                    $join->where('rm.eleicao_id', '=', $this->eleicaoId);
-                }
-            })
-            ->with(['politico', 'partido', 'cargo']);
-
-        if ($this->eleicaoId !== null) {
-            $rankingQuery->where('politica_candidaturas.eleicao_id', $this->eleicaoId);
-        }
-
-        if ($this->cargoId !== null) {
-            $rankingQuery->where('politica_candidaturas.cargo_id', $this->cargoId);
-        }
-
-        $cargoSelecionado = $this->cargoSelecionado();
-        if (in_array($cargoSelecionado?->nome, ['Prefeito', 'Vereador'], true)) {
-            // Candidaturas municipais pertencem ao próprio município.
-            $rankingQuery->where('politica_candidaturas.cidade_id', $this->cidade->id);
-        }
-
-        if ($partidoFiltro !== null) {
-            $legacyIdsDoPartido = collect(config('politica.migracao_v1.partidos_legacy', []))
-                ->filter(fn ($sigla) => mb_strtoupper((string) $sigla, 'UTF-8') === $partidoFiltro)
-                ->keys()
-                ->map(fn ($id) => (int) $id)
-                ->all();
-
-            $rankingQuery->where(function ($q) use ($partidoFiltro, $legacyIdsDoPartido): void {
-                $q->whereHas('partido', fn ($partido) => $partido->where('sigla', $partidoFiltro));
-
-                if ($legacyIdsDoPartido !== []) {
-                    // Compatibilidade enquanto a correção do legado ainda não foi reprocessada no banco.
-                    $q->orWhereIn('politica_candidaturas.legacy_candidato_id', $legacyIdsDoPartido);
-                }
-            });
-        }
-
-        $ranking = $rankingQuery
+        $rankingQuery = $this->candidaturasRecorteQuery();
+        $ranking = (clone $rankingQuery)
             ->orderByDesc('votos_no_municipio')
             ->orderBy('politica_candidaturas.id')
             ->paginate(
@@ -235,6 +329,23 @@ class EspelhoInteligente extends Component
                 ['*'],
                 'rankingPage'
             );
+
+        $candidatosRelatorio = (clone $rankingQuery)
+            ->orderByDesc('votos_no_municipio')
+            ->orderBy('politica_candidaturas.id')
+            ->limit(500)
+            ->get();
+
+        $candidaturaRelatorio = $this->candidaturaRelatorioId
+            ? $candidatosRelatorio->firstWhere('id', $this->candidaturaRelatorioId)
+            : null;
+
+        $favoritoRelatorio = $this->candidaturaRelatorioId
+            ? EspelhoInteligencia::query()
+                ->where('cidade_id', $this->cidade->id)
+                ->where('candidatura_id', $this->candidaturaRelatorioId)
+                ->first()
+            : null;
 
         return view('livewire.politica.v2.espelho-inteligente', [
             'eleicoes' => $eleicoes,
@@ -244,6 +355,9 @@ class EspelhoInteligente extends Component
             'usaFiltroRepublicanos' => $this->cargoUsaFiltroRepublicanos(),
             'partidoFiltro' => $partidoFiltro,
             'ranking' => $ranking,
+            'candidatosRelatorio' => $candidatosRelatorio,
+            'candidaturaRelatorio' => $candidaturaRelatorio,
+            'favoritoRelatorio' => $favoritoRelatorio,
         ]);
     }
 }

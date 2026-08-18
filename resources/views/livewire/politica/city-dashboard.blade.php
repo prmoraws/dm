@@ -1,3 +1,4 @@
+@section('title', 'Política - Espelho Inteligente - Bahia')
 <div>
     <x-slot name="header">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

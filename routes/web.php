@@ -41,6 +41,15 @@ use App\Livewire\Politica\V2\EspelhoInteligente;
 use App\Livewire\Politica\V2\EspelhoOperacionalEdit;
 use App\Livewire\Politica\V2\MapaInterativo;
 use App\Livewire\Politica\V2\DadosOficiais;
+use App\Livewire\Politica\V2\Eleicoes2026;
+use App\Livewire\Politica\V2\HistoricoAcompanhados;
+use App\Livewire\Politica\V2\ComparativoTerritorial;
+use App\Livewire\Politica\V2\InteligenciaTerritorial;
+use App\Livewire\Politica\V2\PainelExecutivo;
+use App\Http\Controllers\Politica\PainelExecutivoExportController;
+use App\Http\Controllers\Politica\EspelhoCidadeExportController;
+use App\Livewire\Politica\V2\QualidadeDados;
+use App\Http\Controllers\Politica\PoliticaQualidadeDadosExportController;
 use App\Http\Controllers\Universal\PessoaPrintController;
 use Illuminate\Support\Facades\Artisan;
 use App\Livewire\Unp\FormularioBatismo;
@@ -173,10 +182,22 @@ Route::middleware([
         Route::get('/politicos/{politico}', PoliticoShow::class)->name('politica.politicos.show');
         Route::get('/cidades', CityDashboard::class)->name('politica.cidades');
         Route::get('/espelho/{cidade}', EspelhoInteligente::class)->name('politica.espelho.inteligente');
+        Route::get('/espelho/{cidade}/relatorio/pdf', [EspelhoCidadeExportController::class, 'pdf'])->name('politica.espelho.relatorio.pdf');
+        Route::get('/espelho/{cidade}/relatorio/excel', [EspelhoCidadeExportController::class, 'excel'])->name('politica.espelho.relatorio.excel');
 
         Route::get('/espelho/{cidade}/editar', EspelhoOperacionalEdit::class)->name('politica.espelho.edit');
         Route::get('/mapa', MapaInterativo::class)->name('politica.mapa');
         Route::get('/dados-oficiais', DadosOficiais::class)->name('politica.dados-oficiais');
+        Route::get('/eleicoes-2026', Eleicoes2026::class)->name('politica.eleicoes-2026');
+        Route::get('/historico-acompanhados', HistoricoAcompanhados::class)->name('politica.historico-acompanhados');
+        Route::get('/comparativo-territorial', ComparativoTerritorial::class)->name('politica.comparativo-territorial');
+        Route::get('/inteligencia-territorial', InteligenciaTerritorial::class)->name('politica.inteligencia-territorial');
+        Route::get('/painel-executivo', PainelExecutivo::class)->name('politica.painel-executivo');
+        Route::get('/painel-executivo/exportar/pdf', [PainelExecutivoExportController::class, 'pdf'])->name('politica.painel-executivo.pdf');
+        Route::get('/painel-executivo/exportar/excel', [PainelExecutivoExportController::class, 'excel'])->name('politica.painel-executivo.excel');
+        Route::get('/qualidade-dados', QualidadeDados::class)->name('politica.qualidade-dados');
+        Route::get('/qualidade-dados/exportar/pdf', [PoliticaQualidadeDadosExportController::class, 'pdf'])->name('politica.qualidade-dados.pdf');
+        Route::get('/qualidade-dados/exportar/excel', [PoliticaQualidadeDadosExportController::class, 'excel'])->name('politica.qualidade-dados.excel');
 
         // Rotas legadas preservadas apenas para auditoria/transição.
         Route::get('/legado/cidade/{cidade}', CityView::class)->name('politica.legado.cidade.view');

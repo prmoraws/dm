@@ -104,8 +104,8 @@ class TseConditionalHttpClient
             ->withHeaders([
                 'User-Agent' => 'DOMO-Politica/2.0',
             ])
-            ->connectTimeout(3)
-            ->timeout(8)
+            ->connectTimeout((int) config('politica.apuracao.connect_timeout', 3))
+            ->timeout((int) config('politica.apuracao.request_timeout', 8))
             ->retry(2, 250, throw: false);
     }
 }

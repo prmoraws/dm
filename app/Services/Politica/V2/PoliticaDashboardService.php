@@ -19,6 +19,7 @@ class PoliticaDashboardService
                 ->with([
                     'politico.candidaturas' => fn ($query) => $query
                         ->with(['eleicao', 'cargo', 'partido'])
+                        ->withCount(['resultadosMunicipais', 'resultadosZonas'])
                         ->orderByDesc('eleicao_id'),
                 ])
                 ->where('ativo', true)

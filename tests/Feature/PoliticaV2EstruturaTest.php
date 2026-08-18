@@ -56,7 +56,7 @@ class PoliticaV2EstruturaTest extends TestCase
     public function candidaturas_separam_politico_eleicao_cargo_e_partido(): void
     {
         $this->assertTrue(Schema::hasColumns('politica_candidaturas', [
-            'politico_id', 'eleicao_id', 'cargo_id', 'partido_id', 'tse_sq_candidato',
+            'politico_id', 'eleicao_id', 'cargo_id', 'partido_id', 'tse_sq_candidato', 'tse_chave_historica',
             'numero_urna', 'nome_urna', 'cidade_id', 'origem', 'legacy_candidato_id', 'origem_chave',
             'situacao_registro', 'situacao_eleicao',
             'votos_total', 'percentual_total', 'eleito', 'sincronizado_em',

@@ -12,7 +12,7 @@ class PoliticaTseSincronizar extends Command
     protected $signature = 'politica:tse-sincronizar
         {ano : Ano da eleição, ex.: 2022, 2024 ou 2026}
         {--uf=BA : UF territorial principal}
-        {--escopo=espelho : espelho, todos ou prioritarios}
+        {--escopo=espelho : espelho, todos, prioritarios ou historico-especial}
         {--somente= : candidaturas ou resultados; vazio usa automático}
         {--arquivo-candidaturas= : ZIP/CSV local em vez de download}
         {--arquivo-resultados= : ZIP/CSV local em vez de download}
@@ -38,8 +38,8 @@ class PoliticaTseSincronizar extends Command
             return self::FAILURE;
         }
 
-        if (! in_array($escopo, ['espelho', 'todos', 'prioritarios'], true)) {
-            $this->error('Escopo inválido. Use espelho, todos ou prioritarios.');
+        if (! in_array($escopo, ['espelho', 'todos', 'prioritarios', 'historico-especial', 'historico_especial'], true)) {
+            $this->error('Escopo inválido. Use espelho, todos, prioritarios ou historico-especial.');
             return self::FAILURE;
         }
 
