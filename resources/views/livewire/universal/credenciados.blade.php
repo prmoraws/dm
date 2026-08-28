@@ -60,6 +60,11 @@
                             placeholder="Buscar Credenciado..."
                             class="w-full px-4 py-3 sm:py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                     </div>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                    <a href="{{ route('universal.credenciados.dashboard') }}"
+                        class="bg-slate-700 hover:bg-slate-800 text-white font-semibold px-4 py-3 sm:py-2 rounded-lg shadow-md flex items-center justify-center gap-2 w-full md:w-auto transition-all">
+                        Dashboard
+                    </a>
                     <button wire:click="create"
                         class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-3 sm:py-2 rounded-lg shadow-md flex items-center justify-center gap-2 w-full md:w-auto transition-all">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,7 +72,21 @@
                         </svg>
                         Novo Credenciado
                     </button>
+                    </div>
                 </div>
+
+                @if($credencial_status || $inicio || $fim || $filtro_bloco || $filtro_regiao || $filtro_igreja)
+                    @php($rotulosStatus = [
+                        'com_credencial' => 'Com credencial', 'sem_credencial' => 'Sem credencial',
+                        'validas' => 'Credencial válida', 'vencendo' => 'Vence em até 30 dias',
+                        'vencidas' => 'Credencial vencida', 'sem_validade' => 'Sem validade informada',
+                        'unidade_nao_faz' => 'Unidade não emite',
+                    ])
+                    <div class="mb-5 flex flex-col gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100 sm:flex-row sm:items-center sm:justify-between">
+                        <p><strong>Listagem filtrada pelo dashboard.</strong> {{ $rotulosStatus[$credencial_status] ?? 'Todos os credenciados' }}</p>
+                        <button type="button" wire:click="limparFiltroDashboard" class="font-bold underline underline-offset-2">Limpar filtro</button>
+                    </div>
+                @endif
 
                 {{-- TABELA DESKTOP --}}
                 <div
@@ -499,7 +518,7 @@
                                                     </svg>
                                                 </button>
 
-                                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 pt-2">
                                                     <div>
                                                         <label
                                                             class="block text-xs font-bold uppercase text-gray-500 mb-1">Presídio</label>
@@ -515,12 +534,35 @@
                                                     </div>
 
                                                     <div>
+                                                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Primeira credencial</label>
+                                                        <input type="date"
+                                                            wire:model="credenciais.{{ $index }}.data_primeira_credencial"
+                                                            class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                                        @error("credenciais.$index.data_primeira_credencial")
+                                                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                                        @enderror
+                                                    </div>
+
+                                                    <div>
+                                                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Renovação (opcional)</label>
+                                                        <input type="date"
+                                                            wire:model="credenciais.{{ $index }}.data_renovacao"
+                                                            class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                                        @error("credenciais.$index.data_renovacao")
+                                                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                                        @enderror
+                                                    </div>
+
+                                                    <div>
                                                         <label
                                                             class="block text-xs font-bold uppercase text-gray-500 mb-1">Data
                                                             de Vencimento</label>
                                                         <input type="date"
                                                             wire:model="credenciais.{{ $index }}.data_vencimento"
                                                             class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                                        @error("credenciais.$index.data_vencimento")
+                                                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                                                        @enderror
                                                     </div>
 
                                                     <div class="flex items-center pt-5">
@@ -776,12 +818,17 @@
                                                     </svg>
                                                     {{ $cp->presidio->nome ?? 'Presídio Desconhecido' }}
                                                 </p>
-                                                @if ($cp->data_vencimento)
-                                                    <span
-                                                        class="text-[11px] bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 px-2 py-0.5 rounded font-semibold">
-                                                        Vencimento: {{ $cp->data_vencimento->format('d/m/Y') }}
-                                                    </span>
-                                                @endif
+                                                <div class="flex flex-wrap gap-1">
+                                                    @if ($cp->data_primeira_credencial)
+                                                        <span class="text-[11px] bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2 py-0.5 rounded font-semibold">Primeira: {{ $cp->data_primeira_credencial->format('d/m/Y') }}</span>
+                                                    @endif
+                                                    @if ($cp->data_renovacao)
+                                                        <span class="text-[11px] bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-300 px-2 py-0.5 rounded font-semibold">Renovação: {{ $cp->data_renovacao->format('d/m/Y') }}</span>
+                                                    @endif
+                                                    @if ($cp->data_vencimento)
+                                                        <span class="text-[11px] bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 px-2 py-0.5 rounded font-semibold">Vencimento: {{ $cp->data_vencimento->format('d/m/Y') }}</span>
+                                                    @endif
+                                                </div>
                                             </div>
 
                                             @if ($cp->unidade_nao_faz)

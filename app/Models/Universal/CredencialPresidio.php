@@ -13,11 +13,15 @@ class CredencialPresidio extends Model
         'foto_frente',
         'foto_verso',
         'unidade_nao_faz', // Novo campo booleano ou integer
+        'data_primeira_credencial',
+        'data_renovacao',
         'data_vencimento'   // Novo campo de data
     ];
 
     protected $casts = [
         'unidade_nao_faz' => 'boolean',
+        'data_primeira_credencial' => 'date',
+        'data_renovacao' => 'date',
         'data_vencimento' => 'date',
     ];
 

@@ -31,11 +31,20 @@ class Credenciados extends Component
     public $credenciais = [];
 
     public $isOpen = false, $isViewOpen = false, $confirmDeleteId = null, $selectedCredenciado, $search = '', $errorMessage = '';
+    public $credencial_status = '', $inicio = '', $fim = '', $filtro_bloco = '', $filtro_regiao = '', $filtro_igreja = '';
     public $cidades = [], $regiaos = [], $igrejas = [];
     public $allBlocos, $allEstados, $allCategorias, $allCargos, $allGrupos, $allPresidios;
     public $trabalho = [], $batismo = [], $preso = [];
 
-    protected $queryString = ['search' => ['except' => '']];
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'credencial_status' => ['except' => ''],
+        'inicio' => ['except' => ''],
+        'fim' => ['except' => ''],
+        'filtro_bloco' => ['as' => 'bloco', 'except' => ''],
+        'filtro_regiao' => ['as' => 'regiao', 'except' => ''],
+        'filtro_igreja' => ['as' => 'igreja', 'except' => ''],
+    ];
 
     public function mount()
     {
@@ -57,6 +66,8 @@ class Credenciados extends Component
                 'foto_frente_atual' => null,
                 'foto_verso_atual' => null,
                 'unidade_nao_faz' => false,
+                'data_primeira_credencial' => null,
+                'data_renovacao' => null,
                 'data_vencimento' => null,
             ];
         } else {
@@ -135,6 +146,8 @@ class Credenciados extends Component
                     $novaCredencial->credenciado_id = $credenciado->id;
                     $novaCredencial->presidio_id = $cred['presidio_id'];
                     $novaCredencial->unidade_nao_faz = $cred['unidade_nao_faz'] ?? false;
+                    $novaCredencial->data_primeira_credencial = $cred['data_primeira_credencial'] ?? null;
+                    $novaCredencial->data_renovacao = $cred['data_renovacao'] ?? null;
                     $novaCredencial->data_vencimento = $cred['data_vencimento'] ?? null;
 
                     if (!($cred['unidade_nao_faz'] ?? false)) {
@@ -213,6 +226,8 @@ class Credenciados extends Component
                     'foto_frente_atual' => $cp->foto_frente,
                     'foto_verso_atual' => $cp->foto_verso,
                     'unidade_nao_faz' => (bool) $cp->unidade_nao_faz,
+                    'data_primeira_credencial' => $cp->data_primeira_credencial?->format('Y-m-d'),
+                    'data_renovacao' => $cp->data_renovacao?->format('Y-m-d'),
                     'data_vencimento' => $cp->data_vencimento ? $cp->data_vencimento->format('Y-m-d') : null,
                 ];
             }
@@ -234,6 +249,8 @@ class Credenciados extends Component
     public function render()
     {
         $user = Auth::user();
+        $hoje = now()->startOfDay();
+        $limite = now()->startOfDay()->addDays(30);
 
         $query = Credenciado::with(['igreja', 'credencialPresidios.presidio'])
             // Restringe rigorosamente para o bloco do usuário logado se ele NÃO for do bloco 21
@@ -241,8 +258,35 @@ class Credenciados extends Component
                 $q->where('bloco_id', $user->bloco_id);
             })
             ->when($this->search, function ($q) {
-                $q->where('nome', 'like', '%' . $this->search . '%');
+                $termo = '%' . trim($this->search) . '%';
+                $q->where(function ($subquery) use ($termo) {
+                    $subquery->where('nome', 'like', $termo)
+                        ->orWhere('celular', 'like', $termo)
+                        ->orWhere('telefone', 'like', $termo)
+                        ->orWhere('email', 'like', $termo)
+                        ->orWhereHas('igreja', fn ($igreja) => $igreja->where('nome', 'like', $termo))
+                        ->orWhereHas('bloco', fn ($bloco) => $bloco->where('nome', 'like', $termo))
+                        ->orWhereHas('regiao', fn ($regiao) => $regiao->where('nome', 'like', $termo))
+                        ->orWhereHas('cargo', fn ($cargo) => $cargo->where('nome', 'like', $termo));
+                });
             })
+            ->when($this->inicio, fn ($q) => $q->whereDate('created_at', '>=', $this->inicio))
+            ->when($this->fim, fn ($q) => $q->whereDate('created_at', '<=', $this->fim))
+            ->when($user->bloco_id == 21 && $this->filtro_bloco, fn ($q) => $q->where('bloco_id', $this->filtro_bloco))
+            ->when($this->filtro_regiao, fn ($q) => $q->where('regiao_id', $this->filtro_regiao))
+            ->when($this->filtro_igreja, fn ($q) => $q->where('igreja_id', $this->filtro_igreja))
+            ->when($this->credencial_status === 'com_credencial', fn ($q) => $q->whereHas('credencialPresidios'))
+            ->when($this->credencial_status === 'sem_credencial', fn ($q) => $q->whereDoesntHave('credencialPresidios'))
+            ->when($this->credencial_status === 'validas', fn ($q) => $q->whereHas('credencialPresidios', fn ($credencial) => $credencial
+                ->where('unidade_nao_faz', false)->whereDate('data_vencimento', '>=', $hoje)))
+            ->when($this->credencial_status === 'vencendo', fn ($q) => $q->whereHas('credencialPresidios', fn ($credencial) => $credencial
+                ->where('unidade_nao_faz', false)->whereBetween('data_vencimento', [$hoje, $limite])))
+            ->when($this->credencial_status === 'vencidas', fn ($q) => $q->whereHas('credencialPresidios', fn ($credencial) => $credencial
+                ->where('unidade_nao_faz', false)->whereDate('data_vencimento', '<', $hoje)))
+            ->when($this->credencial_status === 'sem_validade', fn ($q) => $q->whereHas('credencialPresidios', fn ($credencial) => $credencial
+                ->where('unidade_nao_faz', false)->whereNull('data_vencimento')))
+            ->when($this->credencial_status === 'unidade_nao_faz', fn ($q) => $q->whereHas('credencialPresidios', fn ($credencial) => $credencial
+                ->where('unidade_nao_faz', true)))
             ->latest();
 
         return view('livewire.universal.credenciados', [
@@ -284,6 +328,14 @@ class Credenciados extends Component
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'identidade_frente' => 'nullable|image|max:2048',
             'identidade_verso' => 'nullable|image|max:2048',
+            'credenciais' => 'array|max:10',
+            'credenciais.*.presidio_id' => 'nullable|distinct|exists:presidios,id',
+            'credenciais.*.unidade_nao_faz' => 'boolean',
+            'credenciais.*.data_primeira_credencial' => 'nullable|date',
+            'credenciais.*.data_renovacao' => 'nullable|date|after_or_equal:credenciais.*.data_primeira_credencial',
+            'credenciais.*.data_vencimento' => 'nullable|date|after_or_equal:credenciais.*.data_primeira_credencial',
+            'credenciais.*.foto_frente' => 'nullable|image|max:2048',
+            'credenciais.*.foto_verso' => 'nullable|image|max:2048',
         ];
 
         // Se for admin (bloco 21), ele pode escolher o bloco no select. Senão, o bloco_id é obrigatório e fixo.
@@ -335,6 +387,12 @@ class Credenciados extends Component
 
     public function updatedSearch()
     {
+        $this->resetPage();
+    }
+
+    public function limparFiltroDashboard(): void
+    {
+        $this->reset('credencial_status', 'inicio', 'fim', 'filtro_bloco', 'filtro_regiao', 'filtro_igreja');
         $this->resetPage();
     }
 
