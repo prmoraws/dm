@@ -26,7 +26,7 @@
                 </button>
             </div>
 
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                 <label class="space-y-1 text-sm">
                     <span class="font-semibold text-slate-600 dark:text-slate-300">Data inicial</span>
                     <input type="date" wire:model.live="dataInicio" class="w-full rounded-xl border-slate-300 bg-white dark:border-gray-700 dark:bg-gray-950">
@@ -58,6 +58,13 @@
                         @foreach($igrejasDisponiveis as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
                     </select>
                 </label>
+                <label class="space-y-1 text-sm">
+                    <span class="font-semibold text-slate-600 dark:text-slate-300">Presídio</span>
+                    <select wire:model.live="presidioId" class="w-full rounded-xl border-slate-300 bg-white dark:border-gray-700 dark:bg-gray-950">
+                        <option value="">Todos</option>
+                        @foreach($presidiosDisponiveis as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
+                    </select>
+                </label>
             </div>
         </section>
 
@@ -68,6 +75,7 @@
                 'bloco' => auth()->user()->bloco_id == 21 ? $blocoId : null,
                 'regiao' => $regiaoId,
                 'igreja' => $igrejaId,
+                'presidio' => $presidioId,
             ], fn ($valor) => $valor !== null && $valor !== '');
             $cards = [
                 ['status' => '', 'rotulo' => 'Total de credenciados', 'valor' => $indicadores['total'], 'cor' => 'from-blue-700 to-indigo-800', 'texto' => 'text-white'],
@@ -92,6 +100,56 @@
                     </div>
                 </a>
             @endforeach
+        </section>
+
+        <section class="grid gap-5 xl:grid-cols-2">
+            <article class="overflow-hidden rounded-2xl border border-red-200 bg-white shadow-sm dark:border-red-950 dark:bg-gray-900">
+                <header class="flex items-start justify-between gap-4 bg-red-50 p-5 dark:bg-red-950/40">
+                    <div>
+                        <h3 class="font-black text-red-800 dark:text-red-300">Credenciais vencidas</h3>
+                        <p class="mt-1 text-xs text-red-700/80 dark:text-red-300/80">Exige regularização ou confirmação da situação junto à unidade.</p>
+                    </div>
+                    <span class="rounded-full bg-red-700 px-3 py-1 text-sm font-black text-white">{{ $alertas['vencidas_total'] }}</span>
+                </header>
+                <div class="max-h-96 overflow-auto">
+                    @forelse($alertas['vencidas'] as $credencial)
+                        <a href="{{ route('universal.credenciados', array_merge($filtros, ['presidio' => $credencial->presidio_id, 'credencial_status' => 'vencidas'])) }}"
+                           class="flex items-center justify-between gap-4 border-t border-red-100 px-5 py-3 transition hover:bg-red-50 dark:border-red-950/60 dark:hover:bg-red-950/20">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-bold">{{ $credencial->credenciado->nome ?? 'Credenciado removido' }}</p>
+                                <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $credencial->presidio->nome ?? 'Presídio não informado' }}</p>
+                            </div>
+                            <time class="shrink-0 text-sm font-black text-red-700 dark:text-red-400">{{ $credencial->data_vencimento?->format('d/m/Y') }}</time>
+                        </a>
+                    @empty
+                        <div class="p-8 text-center text-sm font-semibold text-emerald-700 dark:text-emerald-400">Nenhuma credencial vencida nos filtros atuais.</div>
+                    @endforelse
+                </div>
+            </article>
+
+            <article class="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-950 dark:bg-gray-900">
+                <header class="flex items-start justify-between gap-4 bg-amber-50 p-5 dark:bg-amber-950/40">
+                    <div>
+                        <h3 class="font-black text-amber-900 dark:text-amber-300">Vencem ainda neste mês</h3>
+                        <p class="mt-1 text-xs text-amber-800/80 dark:text-amber-300/80">Da data de hoje até o último dia do mês corrente.</p>
+                    </div>
+                    <span class="rounded-full bg-amber-500 px-3 py-1 text-sm font-black text-slate-950">{{ $alertas['vencendo_mes_total'] }}</span>
+                </header>
+                <div class="max-h-96 overflow-auto">
+                    @forelse($alertas['vencendo_mes'] as $credencial)
+                        <a href="{{ route('universal.credenciados', array_merge($filtros, ['presidio' => $credencial->presidio_id, 'credencial_status' => 'vencendo'])) }}"
+                           class="flex items-center justify-between gap-4 border-t border-amber-100 px-5 py-3 transition hover:bg-amber-50 dark:border-amber-950/60 dark:hover:bg-amber-950/20">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-bold">{{ $credencial->credenciado->nome ?? 'Credenciado removido' }}</p>
+                                <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $credencial->presidio->nome ?? 'Presídio não informado' }}</p>
+                            </div>
+                            <time class="shrink-0 text-sm font-black text-amber-700 dark:text-amber-400">{{ $credencial->data_vencimento?->format('d/m/Y') }}</time>
+                        </a>
+                    @empty
+                        <div class="p-8 text-center text-sm font-semibold text-slate-500">Nenhuma credencial vence no restante deste mês.</div>
+                    @endforelse
+                </div>
+            </article>
         </section>
 
         @php($tabelas = [

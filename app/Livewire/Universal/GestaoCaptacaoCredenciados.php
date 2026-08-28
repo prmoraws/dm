@@ -5,8 +5,11 @@ namespace App\Livewire\Universal;
 use App\Models\Universal\CaptacaoCredenciado;
 use App\Models\Universal\Credenciado;
 use App\Models\Universal\CredencialPresidio;
+use App\Models\Unp\Presidio;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -23,15 +26,26 @@ class GestaoCaptacaoCredenciados extends Component
 
     protected $queryString = ['search' => ['except' => '']];
 
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
     public function render()
     {
-        $results = CaptacaoCredenciado::where('nome', 'like', '%' . $this->search . '%')
+        $results = CaptacaoCredenciado::query()
+            ->where(function (Builder $query): void {
+                $query->where('nome', 'like', '%' . $this->search . '%')
+                    ->orWhere('cpf', 'like', '%' . preg_replace('/\D+/', '', $this->search) . '%')
+                    ->orWhere('celular', 'like', '%' . preg_replace('/\D+/', '', $this->search) . '%');
+            })
             ->where('status', 'pendente')
             ->latest()
             ->paginate(10);
 
         return view('livewire.universal.gestao-captacao-credenciados', [
             'results' => $results,
+            'presidios' => Presidio::pluck('nome', 'id'),
         ]); // Removido qualquer ->layout() para usar o padrão App
     }
 
@@ -59,6 +73,7 @@ class GestaoCaptacaoCredenciados extends Component
             $credenciado = Credenciado::create([
                 'nome' => $captacao->nome,
                 'celular' => $captacao->celular,
+                'telefone' => $captacao->telefone,
                 'email' => $captacao->email,
                 'bloco_id' => $captacao->bloco_id,
                 'regiao_id' => $captacao->regiao_id,
@@ -95,6 +110,10 @@ class GestaoCaptacaoCredenciados extends Component
                         'presidio_id' => $item['presidio_id'],
                         'foto_frente' => $cresFrente,
                         'foto_verso' => $cresVerso,
+                        'unidade_nao_faz' => (bool) ($item['unidade_nao_faz'] ?? false),
+                        'data_primeira_credencial' => $item['data_primeira_credencial'] ?? null,
+                        'data_renovacao' => $item['data_renovacao'] ?? null,
+                        'data_vencimento' => $item['data_vencimento'] ?? null,
                     ]);
                 }
             }
@@ -107,7 +126,8 @@ class GestaoCaptacaoCredenciados extends Component
             $this->isViewOpen = false;
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Erro ao processar aprovação: ' . $e->getMessage());
+            Log::error('Falha ao aprovar captação de credenciado.', ['exception' => $e, 'captacao_id' => $id]);
+            session()->flash('error', 'Não foi possível concluir a aprovação. Tente novamente.');
         }
     }
 
@@ -147,7 +167,8 @@ class GestaoCaptacaoCredenciados extends Component
             $this->isViewOpen = false; // Fecha o modal de revisão também, se estiver aberto
 
         } catch (\Exception $e) {
-            session()->flash('error', 'Erro ao excluir: ' . $e->getMessage());
+            Log::error('Falha ao excluir captação de credenciado.', ['exception' => $e]);
+            session()->flash('error', 'Não foi possível excluir a captação. Tente novamente.');
         }
     }
 

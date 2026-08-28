@@ -1,4 +1,4 @@
-<div>
+<div class="min-h-screen bg-slate-50 dark:bg-gray-950">
     <x-slot name="header">
         <div class="flex items-center space-x-3">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800 dark:text-gray-200" fill="none"
@@ -27,7 +27,7 @@
                 <div
                     class="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4">
                     <input wire:model.live.debounce.300ms="search" type="text"
-                        placeholder="Buscar por nome ou CPF..."
+                        placeholder="Buscar por nome, CPF ou telefone..."
                         class="w-full md:w-1/3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 focus:ring-blue-500">
 
                     <span class="text-sm text-gray-500 dark:text-gray-400">
@@ -136,13 +136,20 @@
                                 ({{ count($selectedCaptacao->credenciais_payload ?? []) }})</p>
                             <div class="space-y-2 h-40 overflow-y-auto pr-2">
                                 @foreach ($selectedCaptacao->credenciais_payload ?? [] as $cp)
-                                    <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded text-[10px] border flex gap-2">
-                                        <img src="{{ asset($cp['foto_frente']) }}"
-                                            class="h-10 w-10 object-cover rounded">
-                                        <img src="{{ asset($cp['foto_verso']) }}"
-                                            class="h-10 w-10 object-cover rounded">
-                                        <span class="flex-1 self-center font-bold">Presídio ID:
-                                            {{ $cp['presidio_id'] }}</span>
+                                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs dark:border-gray-700 dark:bg-gray-800">
+                                        <div class="flex gap-2">
+                                            @if($cp['foto_frente'] ?? null)<img src="{{ asset($cp['foto_frente']) }}" class="h-12 w-12 rounded object-cover">@endif
+                                            @if($cp['foto_verso'] ?? null)<img src="{{ asset($cp['foto_verso']) }}" class="h-12 w-12 rounded object-cover">@endif
+                                            <div class="min-w-0 self-center">
+                                                <p class="truncate font-bold">{{ $presidios[$cp['presidio_id']] ?? 'Presídio não encontrado' }}</p>
+                                                @if($cp['unidade_nao_faz'] ?? false)<p class="mt-1 font-semibold text-amber-600">Unidade não emite credencial</p>@endif
+                                            </div>
+                                        </div>
+                                        <dl class="mt-3 grid grid-cols-3 gap-2 text-[10px]">
+                                            <div><dt class="text-gray-500">Primeira</dt><dd class="font-bold">{{ !empty($cp['data_primeira_credencial']) ? date('d/m/Y', strtotime($cp['data_primeira_credencial'])) : '—' }}</dd></div>
+                                            <div><dt class="text-gray-500">Renovação</dt><dd class="font-bold">{{ !empty($cp['data_renovacao']) ? date('d/m/Y', strtotime($cp['data_renovacao'])) : '—' }}</dd></div>
+                                            <div><dt class="text-gray-500">Validade</dt><dd class="font-bold">{{ !empty($cp['data_vencimento']) ? date('d/m/Y', strtotime($cp['data_vencimento'])) : '—' }}</dd></div>
+                                        </dl>
                                     </div>
                                 @endforeach
                             </div>

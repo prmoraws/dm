@@ -4,16 +4,20 @@ namespace App\Livewire\Universal;
 
 use App\Models\Universal\Bloco;
 use App\Models\Universal\Credenciado;
+use App\Models\Universal\CredencialPresidio;
 use App\Models\Universal\Igreja;
 use App\Models\Universal\Regiao;
+use App\Models\Unp\Presidio;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class CredenciadosDashboard extends Component
 {
+    use AuthorizesRequests;
     #[Url(as: 'inicio', except: '')]
     public string $dataInicio = '';
 
@@ -29,8 +33,12 @@ class CredenciadosDashboard extends Component
     #[Url(as: 'igreja', except: '')]
     public string $igrejaId = '';
 
+    #[Url(as: 'presidio', except: '')]
+    public string $presidioId = '';
+
     public function mount(): void
     {
+        $this->authorize('viewAny', Credenciado::class);
         $user = Auth::user();
 
         if ($user->bloco_id != 21) {
@@ -54,7 +62,7 @@ class CredenciadosDashboard extends Component
 
     public function limparFiltros(): void
     {
-        $this->reset('dataInicio', 'dataFim', 'regiaoId', 'igrejaId');
+        $this->reset('dataInicio', 'dataFim', 'regiaoId', 'igrejaId', 'presidioId');
         $this->blocoId = Auth::user()->bloco_id != 21
             ? (string) Auth::user()->bloco_id
             : '';
@@ -69,6 +77,10 @@ class CredenciadosDashboard extends Component
             ->when($this->blocoId !== '', fn (Builder $query) => $query->where('credenciados.bloco_id', $this->blocoId))
             ->when($this->regiaoId !== '', fn (Builder $query) => $query->where('credenciados.regiao_id', $this->regiaoId))
             ->when($this->igrejaId !== '', fn (Builder $query) => $query->where('credenciados.igreja_id', $this->igrejaId))
+            ->when($this->presidioId !== '', fn (Builder $query) => $query->whereHas(
+                'credencialPresidios',
+                fn (Builder $credenciais) => $credenciais->where('presidio_id', $this->presidioId)
+            ))
             ->when($this->dataInicio !== '', fn (Builder $query) => $query->whereDate('credenciados.created_at', '>=', $this->dataInicio))
             ->when($this->dataFim !== '', fn (Builder $query) => $query->whereDate('credenciados.created_at', '<=', $this->dataFim));
     }
@@ -88,6 +100,7 @@ class CredenciadosDashboard extends Component
     {
         $hoje = CarbonImmutable::today();
         $limite = $hoje->addDays(30);
+        $fimDoMes = $hoje->endOfMonth();
         $base = $this->queryBase();
 
         $indicadores = [
@@ -130,6 +143,18 @@ class CredenciadosDashboard extends Component
             ->orderBy('nome')
             ->get(['id', 'nome']);
 
+        $idsFiltrados = (clone $base)->select('credenciados.id');
+        $credenciaisVencidasQuery = CredencialPresidio::query()
+            ->with(['credenciado:id,nome,celular', 'presidio:id,nome'])
+            ->whereIn('credenciado_id', clone $idsFiltrados)
+            ->where('unidade_nao_faz', false)
+            ->whereDate('data_vencimento', '<', $hoje);
+        $credenciaisVencendoMesQuery = CredencialPresidio::query()
+            ->with(['credenciado:id,nome,celular', 'presidio:id,nome'])
+            ->whereIn('credenciado_id', clone $idsFiltrados)
+            ->where('unidade_nao_faz', false)
+            ->whereBetween('data_vencimento', [$hoje, $fimDoMes]);
+
         return view('livewire.universal.credenciados-dashboard', [
             'indicadores' => $indicadores,
             'blocos' => $this->quantidadePor('blocos', 'bloco_id'),
@@ -138,6 +163,7 @@ class CredenciadosDashboard extends Component
             'cargos' => $this->quantidadePor('cargos', 'cargo_id'),
             'categorias' => $this->quantidadePor('categorias', 'categoria_id'),
             'presidios' => $presidios,
+            'presidiosDisponiveis' => Presidio::orderBy('nome')->get(['id', 'nome']),
             'blocosDisponiveis' => Bloco::orderBy('nome')->get(['id', 'nome']),
             'regioesDisponiveis' => $regioesDisponiveis,
             'igrejasDisponiveis' => $igrejasDisponiveis,
@@ -146,6 +172,18 @@ class CredenciadosDashboard extends Component
                 ->latest('credenciados.created_at')
                 ->limit(8)
                 ->get(),
+            'alertas' => [
+                'vencidas_total' => (clone $credenciaisVencidasQuery)->count(),
+                'vencendo_mes_total' => (clone $credenciaisVencendoMesQuery)->count(),
+                'vencidas' => (clone $credenciaisVencidasQuery)
+                    ->orderBy('data_vencimento')
+                    ->limit(12)
+                    ->get(),
+                'vencendo_mes' => (clone $credenciaisVencendoMesQuery)
+                    ->orderBy('data_vencimento')
+                    ->limit(12)
+                    ->get(),
+            ],
         ]);
     }
 }
