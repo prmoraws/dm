@@ -18,7 +18,7 @@ use App\Livewire\Universal\Dashboard as UniversalDashboard;
 use App\Livewire\Unp\Dashboard as UnpDashboard;
 use App\Livewire\Evento\{Entregas, Instituicoes, Terreiros};
 use App\Livewire\Universal\{Banners, Blocos, Categorias, Pastores, PastorUnp, CarroUnp, Pessoas, Regiaos, Igrejas, GestaoCaptacoes};
-use App\Http\Controllers\Universal\{PastorUnpPrintController, CadastroTdaPdfController};
+use App\Http\Controllers\Universal\{PastorUnpPrintController, CadastroTdaPdfController, CadastroTdaTermoPdfController};
 use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos, DashboardBatismo};
 use App\Livewire\Unp\Oficios\{Anexos, Convidados, DadosCurso, InformacaoCurso, ListaCertificado, OficioCredencial, OficioEvento, OficioFormatura, OficioGeral, OficioTrabalho, OficioCop, OficioCurso, Reeducandos};
 use App\Livewire\Universal\{CaptacaoUnp, Credenciados, CaptacaoCredenciadoWizard, GestaoCaptacaoCredenciados, CaptacaoSucesso, EdicaoCarroPublica, CaptacaoTdaWizard, GestaoCaptacoesTda, CadastrosTda, TdaDashboard};
@@ -137,11 +137,19 @@ Route::middleware([
     // automaticamente pelo middleware CheckTeamAccess.
     Route::group(['prefix' => 'tda', 'middleware' => 'team.access:TDA'], function () {
         Route::get('/dashboard', TdaDashboard::class)->name('tda.dashboard');
-        Route::get('/cadastros', CadastrosTda::class)->name('universal.cadastros-tda');
-        Route::get('/cadastros/{cadastroTda}/pdf', [CadastroTdaPdfController::class, 'visualizar'])
+        Route::get('/cadastros-aprovados', CadastrosTda::class)->name('universal.cadastros-tda');
+        Route::get('/cadastros-aprovados/{cadastroTda}/pdf', [CadastroTdaPdfController::class, 'visualizar'])
             ->name('universal.cadastros-tda.pdf.visualizar');
-        Route::get('/cadastros/{cadastroTda}/pdf/baixar', [CadastroTdaPdfController::class, 'baixar'])
+        Route::get('/cadastros-aprovados/{cadastroTda}/pdf/baixar', [CadastroTdaPdfController::class, 'baixar'])
             ->name('universal.cadastros-tda.pdf.baixar');
+        Route::get('/cadastros-aprovados/{cadastroTda}/termos', [CadastroTdaTermoPdfController::class, 'visualizarTodos'])
+            ->name('universal.cadastros-tda.termos.visualizar-todos');
+        Route::get('/cadastros-aprovados/{cadastroTda}/termos/baixar', [CadastroTdaTermoPdfController::class, 'baixarTodos'])
+            ->name('universal.cadastros-tda.termos.baixar-todos');
+        Route::get('/cadastros-aprovados/{cadastroTda}/termos/{tipo}', [CadastroTdaTermoPdfController::class, 'visualizar'])
+            ->name('universal.cadastros-tda.termos.visualizar');
+        Route::get('/cadastros-aprovados/{cadastroTda}/termos/{tipo}/baixar', [CadastroTdaTermoPdfController::class, 'baixar'])
+            ->name('universal.cadastros-tda.termos.baixar');
         Route::get('/gestao-captacoes', GestaoCaptacoesTda::class)
             ->name('secretaria.gestao-captacoes-tda');
     });

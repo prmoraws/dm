@@ -7,7 +7,7 @@
 <div class="min-h-screen bg-gray-100 px-4 py-8 dark:bg-gray-900">
 <div class="mx-auto max-w-7xl">
 @if(session('message'))<div class="mb-4 rounded-lg border-l-4 border-green-600 bg-green-50 p-4 text-green-800">{{ session('message') }}</div>@endif
-@if(session('error'))<div class="mb-4 rounded-lg border-l-4 border-red-600 bg-red-50 p-4 text-red-800">{{ session('error') }}</div>@endif
+@if(session('error'))<div class="fixed left-1/2 top-4 z-[100] w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-lg border-l-4 border-red-600 bg-red-50 p-4 text-red-800 shadow-2xl" role="alert">{{ session('error') }}</div>@endif
 <div class="rounded-xl bg-white p-6 shadow dark:bg-gray-800">
 <div class="mb-5 flex flex-col justify-between gap-4 md:flex-row">
 <input wire:model.live.debounce.400ms="search" class="w-full rounded-lg border-gray-300 md:max-w-md" placeholder="Buscar por nome, e-mail ou celular...">

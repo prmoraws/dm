@@ -42,7 +42,7 @@ class CadastrosTda extends Component
 
     public function visualizar(int $id):void
     {
-        $this->selecionado=$this->escopo(CadastroTda::with(['bloco','regiao','igreja','cidade','estado']))->findOrFail($id);
+        $this->selecionado=$this->escopo(CadastroTda::with(['bloco','regiao','igreja','cidade','estado','responsavelLegal','termosAceitos']))->findOrFail($id);
         $this->authorize('view',$this->selecionado);
         $this->modalVisualizar=true;
     }
@@ -146,8 +146,13 @@ class CadastrosTda extends Component
     {
         $item=$this->escopo(CadastroTda::query())->findOrFail($id);
         $this->authorize('delete',$item);
-        $foto=$item->foto;$item->delete();
+        $foto=$item->foto;
+        $assinatura=$item->assinatura;
+        $assinaturaTestemunha=$item->testemunha_assinatura;
+        $item->delete();
         if($foto && !CaptacaoTda::where('foto',$foto)->exists()) Storage::disk('public_disk')->delete($foto);
+        if($assinatura && !CaptacaoTda::where('assinatura',$assinatura)->exists()) Storage::disk('public_disk')->delete($assinatura);
+        if($assinaturaTestemunha && !CaptacaoTda::where('testemunha_assinatura',$assinaturaTestemunha)->exists()) Storage::disk('public_disk')->delete($assinaturaTestemunha);
         session()->flash('message','Cadastro excluído.');
     }
 
@@ -178,7 +183,7 @@ class CadastrosTda extends Component
 
     public function render()
     {
-        $query=$this->escopo(CadastroTda::with(['bloco','igreja']))
+        $query=$this->escopo(CadastroTda::with(['bloco','igreja'])->withCount('termosAceitos'))
             ->when($this->filtro_bloco_id,fn($q)=>$q->where('bloco_id',$this->filtro_bloco_id))
             ->when($this->search,function($q){$t='%'.trim($this->search).'%';$q->where(fn($s)=>$s->where('nome','like',$t)->orWhere('celular','like',$t));})
             ->orderBy('nome');

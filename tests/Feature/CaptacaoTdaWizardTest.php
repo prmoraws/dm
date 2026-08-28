@@ -46,7 +46,7 @@ class CaptacaoTdaWizardTest extends TestCase
     {
         Livewire::test(CaptacaoTdaWizard::class)
             ->set('cidade_id', 999)
-            ->call('updatedEstadoId', null)
+            ->set('estado_id', null)
             ->assertSet('cidade_id', null);
     }
 
@@ -62,5 +62,48 @@ class CaptacaoTdaWizardTest extends TestCase
             ->assertSet('data_nascimento', '1990-05-20')
             ->assertSet('email', 'teste@example.com')
             ->assertSet('inicio_iurd', '2010-03-15');
+    }
+
+    #[Test]
+    public function fluxo_pos_cadastro_possui_tres_termos_duas_assinaturas_e_revisao(): void
+    {
+        Livewire::test(CaptacaoTdaWizard::class)
+            ->assertSet('totalSteps', 14);
+
+        $this->assertCount(3, config('tda.termos'));
+        $this->assertSame('Luca de Araujo Marques Silva', config('tda.pastor_responsavel.nome'));
+    }
+
+    #[Test]
+    public function menoridade_e_calculada_pela_data_de_nascimento(): void
+    {
+        Livewire::test(CaptacaoTdaWizard::class)
+            ->set('data_nascimento', now()->subYears(17)->format('Y-m-d'))
+            ->call('menorDeIdade')
+            ->assertReturned(true);
+    }
+
+    #[Test]
+    public function responsavel_legal_nao_e_exigido_de_participante_maior_de_idade(): void
+    {
+        Livewire::test(CaptacaoTdaWizard::class)
+            ->set('data_nascimento', now()->subYears(25)->format('Y-m-d'))
+            ->set('step', 10)
+            ->call('aceitarTermo', 'cessao_imagem_voz')
+            ->assertHasNoErrors([
+                'responsavel_nome', 'responsavel_rg', 'responsavel_cpf',
+                'responsavel_endereco', 'responsavel_data_nascimento',
+            ])
+            ->assertSet('step', 11);
+    }
+
+    #[Test]
+    public function aceite_do_termo_e_registrado_na_sessao_e_avanca(): void
+    {
+        Livewire::test(CaptacaoTdaWizard::class)
+            ->set('step', 9)
+            ->call('aceitarTermo', 'adesao_servico_voluntario')
+            ->assertSet('aceite_adesao', true)
+            ->assertSet('step', 10);
     }
 }

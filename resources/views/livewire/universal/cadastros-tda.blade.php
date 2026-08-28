@@ -34,6 +34,7 @@
 <td class="p-4">
 <div class="flex justify-center gap-3">
 <a target="_blank" title="Imprimir PDF" href="{{ route('universal.cadastros-tda.pdf.visualizar',$item) }}" class="text-gray-600 hover:text-black">Imprimir</a>
+@if($item->termos_aceitos_count)<a target="_blank" title="Visualizar termos" href="{{ route('universal.cadastros-tda.termos.visualizar-todos',$item) }}" class="font-semibold text-purple-700">Termos</a>@endif
 <button wire:click="visualizar({{ $item->id }})" class="text-green-700">Visualizar</button>
 <button wire:click="editar({{ $item->id }})" class="text-blue-700">Editar</button>
 <button wire:click="excluir({{ $item->id }})" wire:confirm="Excluir este cadastro?" class="text-red-700">Excluir</button>
@@ -53,6 +54,7 @@
 </div>
 <div class="mt-4 flex flex-wrap gap-2">
 <a target="_blank" href="{{ route('universal.cadastros-tda.pdf.visualizar',$item) }}" class="rounded border px-3 py-2">Imprimir</a>
+@if($item->termos_aceitos_count)<a target="_blank" href="{{ route('universal.cadastros-tda.termos.visualizar-todos',$item) }}" class="rounded bg-purple-700 px-3 py-2 text-white">Termos</a>@endif
 <button wire:click="visualizar({{ $item->id }})" class="rounded bg-green-600 px-3 py-2 text-white">Ver</button>
 <button wire:click="editar({{ $item->id }})" class="rounded bg-blue-600 px-3 py-2 text-white">Editar</button>
 </div>
@@ -82,6 +84,32 @@
 <p class="font-medium">@if(is_bool($valor)){{ $valor?'Sim':'Não' }}@elseif($valor instanceof \Carbon\CarbonInterface){{ $valor->format('d/m/Y') }}@else{{ filled($valor)?$valor:'—' }}@endif</p>
 </div>@endforeach</div>
 </section>@endforeach
+
+@if($selecionado->termosAceitos->isNotEmpty())
+<section class="mt-6">
+<div class="mb-3 flex flex-col gap-3 border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
+<h4 class="font-bold text-purple-700 dark:text-purple-300">Termos assinados</h4>
+<div class="flex flex-wrap gap-2">
+<a target="_blank" href="{{ route('universal.cadastros-tda.termos.visualizar-todos',$selecionado) }}" class="rounded-lg bg-purple-700 px-3 py-2 text-sm font-semibold text-white">Visualizar todos</a>
+<a href="{{ route('universal.cadastros-tda.termos.baixar-todos',$selecionado) }}" class="rounded-lg bg-green-700 px-3 py-2 text-sm font-semibold text-white">Baixar todos</a>
+</div>
+</div>
+<div class="space-y-3">
+@foreach($selecionado->termosAceitos->sortBy('id') as $aceite)
+@php($termoConfig=config('tda.termos.'.$aceite->tipo))
+@if($termoConfig)
+<article class="flex flex-col gap-3 rounded-lg border p-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+<div><p class="font-semibold">{{ $termoConfig['titulo'] }}</p><p class="text-xs text-gray-500 dark:text-gray-400">Versão {{ $aceite->versao }} · Aceito em {{ $aceite->aceito_em?->format('d/m/Y H:i') }}</p></div>
+<div class="flex shrink-0 gap-2">
+<a target="_blank" href="{{ route('universal.cadastros-tda.termos.visualizar',[$selecionado,$aceite->tipo]) }}" class="rounded border px-3 py-2 text-sm font-semibold dark:border-gray-600">Visualizar</a>
+<a href="{{ route('universal.cadastros-tda.termos.baixar',[$selecionado,$aceite->tipo]) }}" class="rounded bg-green-700 px-3 py-2 text-sm font-semibold text-white">Baixar</a>
+</div>
+</article>
+@endif
+@endforeach
+</div>
+</section>
+@endif
 </div>
 <footer class="grid shrink-0 grid-cols-2 gap-2 border-t border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 sm:flex sm:flex-wrap sm:justify-end sm:gap-3 sm:p-4">
 <button wire:click="fecharModais" class="rounded-lg bg-gray-200 px-5 py-3 font-semibold text-gray-800 dark:bg-gray-700 dark:text-gray-200">Fechar</button>

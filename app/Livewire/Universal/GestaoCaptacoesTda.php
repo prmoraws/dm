@@ -44,7 +44,7 @@ class GestaoCaptacoesTda extends Component
         $captacao = $this->escopo(CaptacaoTda::query())->where('status','pendente')->findOrFail($id);
         $this->authorize('review', $captacao);
 
-        $obrigatorios = ['bloco_id','regiao_id','igreja_id','estado_id','cidade_id','data_ingresso_grupo','funcao_grupo','foto','nome','data_nascimento','estado_civil','rg','cpf','celular','endereco','cep','bairro','escolaridade','emergencia_nome','emergencia_celular','condicao_atual'];
+        $obrigatorios = ['bloco_id','regiao_id','igreja_id','endereco_igreja','estado_id','cidade_id','data_ingresso_grupo','funcao_grupo','foto','assinatura','testemunha_nome','testemunha_rg','testemunha_assinatura','nome','nacionalidade','data_nascimento','estado_civil','rg','cpf','celular','endereco','cep','bairro','escolaridade','emergencia_nome','emergencia_celular','condicao_atual'];
         $faltantes = collect($obrigatorios)->filter(fn($campo) => blank($captacao->{$campo}));
         if ($faltantes->isNotEmpty()) {
             session()->flash('error','Complete antes de aprovar: '.$faltantes->implode(', ').'.');
@@ -60,26 +60,53 @@ class GestaoCaptacoesTda extends Component
             session()->flash('error','A foto da solicitação não foi encontrada.');
             return;
         }
+        if (!$disk->exists($captacao->assinatura) || !$disk->exists($captacao->testemunha_assinatura) || $captacao->termosAceitos()->count() !== 3) {
+            session()->flash('error','As assinaturas ou os três aceites dos termos não foram encontrados.');
+            return;
+        }
         $fotoOriginal = $captacao->foto;
+        $assinaturaOriginal = $captacao->assinatura;
+        $assinaturaTestemunhaOriginal = $captacao->testemunha_assinatura;
         $extensao = pathinfo($fotoOriginal, PATHINFO_EXTENSION) ?: 'jpg';
         $fotoFinal = 'tda/cadastros/'.Str::uuid().'.'.$extensao;
         if (!$disk->copy($fotoOriginal,$fotoFinal)) {
             session()->flash('error','Não foi possível preparar a foto definitiva.');
             return;
         }
+        $assinaturaFinal = 'tda/cadastros/assinaturas/'.Str::uuid().'.png';
+        if (!$disk->copy($assinaturaOriginal, $assinaturaFinal)) {
+            $disk->delete($fotoFinal);
+            session()->flash('error','Não foi possível preparar a assinatura definitiva.');
+            return;
+        }
+        $assinaturaTestemunhaFinal = 'tda/cadastros/assinaturas-testemunhas/'.Str::uuid().'.png';
+        if (!$disk->copy($assinaturaTestemunhaOriginal, $assinaturaTestemunhaFinal)) {
+            $disk->delete([$fotoFinal, $assinaturaFinal]);
+            session()->flash('error','Não foi possível preparar a assinatura definitiva da testemunha.');
+            return;
+        }
 
         try {
-            DB::transaction(function() use ($captacao,$fotoFinal) {
+            DB::transaction(function() use ($captacao,$fotoFinal,$assinaturaFinal,$assinaturaTestemunhaFinal) {
                 $dados = collect((new CadastroTda)->getFillable())->mapWithKeys(fn($campo)=>[$campo=>$captacao->{$campo}])->all();
                 $dados['foto']=$fotoFinal;
-                CadastroTda::create($dados);
-                $captacao->update(['status'=>'aprovado','revisado_por'=>auth()->id(),'revisado_em'=>now(),'motivo_rejeicao'=>null,'foto'=>$fotoFinal]);
+                $dados['assinatura']=$assinaturaFinal;
+                $dados['testemunha_assinatura']=$assinaturaTestemunhaFinal;
+                $dados['captacao_tda_id']=$captacao->id;
+                $cadastro = CadastroTda::create($dados);
+                $captacao->responsavelLegal()->update(['cadastro_tda_id' => $cadastro->id]);
+                $captacao->termosAceitos()->update(['cadastro_tda_id' => $cadastro->id]);
+                $captacao->update(['status'=>'aprovado','revisado_por'=>auth()->id(),'revisado_em'=>now(),'motivo_rejeicao'=>null,'foto'=>$fotoFinal,'assinatura'=>$assinaturaFinal,'testemunha_assinatura'=>$assinaturaTestemunhaFinal]);
             });
             $disk->delete($fotoOriginal);
+            $disk->delete($assinaturaOriginal);
+            $disk->delete($assinaturaTestemunhaOriginal);
             $this->fecharModal();
             session()->flash('message','Solicitação aprovada. O cadastro já está disponível para o gestor.');
         } catch (\Throwable $e) {
             $disk->delete($fotoFinal);
+            $disk->delete($assinaturaFinal);
+            $disk->delete($assinaturaTestemunhaFinal);
             Log::error('Falha ao aprovar TDA',['tipo'=>$e::class,'mensagem'=>$e->getMessage()]);
             session()->flash('error','Não foi possível concluir a aprovação.');
         }
@@ -109,8 +136,18 @@ class GestaoCaptacoesTda extends Component
         $captacao=$this->escopo(CaptacaoTda::query())->findOrFail($id);
         $this->authorize('delete',$captacao);
         $foto=$captacao->foto;
-        $captacao->delete();
+        $assinatura=$captacao->assinatura;
+        $assinaturaTestemunha=$captacao->testemunha_assinatura;
+        DB::transaction(function () use ($captacao): void {
+            if (! $captacao->termosAceitos()->whereNotNull('cadastro_tda_id')->exists()) {
+                $captacao->termosAceitos()->delete();
+                $captacao->responsavelLegal()->delete();
+            }
+            $captacao->delete();
+        });
         if($foto && !CadastroTda::where('foto',$foto)->exists()) Storage::disk('public_disk')->delete($foto);
+        if($assinatura && !CadastroTda::where('assinatura',$assinatura)->exists()) Storage::disk('public_disk')->delete($assinatura);
+        if($assinaturaTestemunha && !CadastroTda::where('testemunha_assinatura',$assinaturaTestemunha)->exists()) Storage::disk('public_disk')->delete($assinaturaTestemunha);
         session()->flash('message','Solicitação excluída.');
     }
 

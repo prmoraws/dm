@@ -6,6 +6,8 @@ use App\Models\Adm\Cidade;
 use App\Models\Adm\Estado;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CadastroTda extends Model
 {
@@ -22,17 +24,24 @@ class CadastroTda extends Model
      * @var array
      */
     protected $fillable = [
+        'captacao_tda_id',
         // Vínculo com igreja e grupo
         'bloco_id',
         'regiao_id',
         'igreja_id',
+        'endereco_igreja',
         'estado_id',
         'data_ingresso_grupo',
         'funcao_grupo',
         'foto',
+        'assinatura',
+        'testemunha_nome',
+        'testemunha_rg',
+        'testemunha_assinatura',
 
         // Dados pessoais
         'nome',
+        'nacionalidade',
         'data_nascimento',
         'estado_civil',
         'rg',
@@ -42,6 +51,7 @@ class CadastroTda extends Model
         'instagram',
         'endereco',
         'numero',
+        'complemento',
         'cep',
         'bairro',
         'cidade_id',
@@ -147,5 +157,20 @@ class CadastroTda extends Model
     public function cidade(): BelongsTo
     {
         return $this->belongsTo(Cidade::class);
+    }
+
+    public function captacao(): BelongsTo
+    {
+        return $this->belongsTo(CaptacaoTda::class, 'captacao_tda_id');
+    }
+
+    public function responsavelLegal(): HasOne
+    {
+        return $this->hasOne(TdaResponsavelLegal::class);
+    }
+
+    public function termosAceitos(): HasMany
+    {
+        return $this->hasMany(TdaTermoAceite::class);
     }
 }

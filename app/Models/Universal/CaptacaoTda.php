@@ -7,6 +7,8 @@ use App\Models\Adm\Estado;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CaptacaoTda extends Model
 {
@@ -27,13 +29,19 @@ class CaptacaoTda extends Model
         'bloco_id',
         'regiao_id',
         'igreja_id',
+        'endereco_igreja',
         'estado_id',
         'data_ingresso_grupo',
         'funcao_grupo',
         'foto',
+        'assinatura',
+        'testemunha_nome',
+        'testemunha_rg',
+        'testemunha_assinatura',
 
         // Dados pessoais
         'nome',
+        'nacionalidade',
         'data_nascimento',
         'estado_civil',
         'rg',
@@ -43,6 +51,7 @@ class CaptacaoTda extends Model
         'instagram',
         'endereco',
         'numero',
+        'complemento',
         'cep',
         'bairro',
         'cidade_id',
@@ -160,5 +169,15 @@ class CaptacaoTda extends Model
     public function revisor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'revisado_por');
+    }
+
+    public function responsavelLegal(): HasOne
+    {
+        return $this->hasOne(TdaResponsavelLegal::class);
+    }
+
+    public function termosAceitos(): HasMany
+    {
+        return $this->hasMany(TdaTermoAceite::class);
     }
 }

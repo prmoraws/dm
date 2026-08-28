@@ -49,6 +49,7 @@
                             <x-tda-select campo="igreja_id" rotulo="Igreja" obrigatorio>
                                 <option value="">Selecione</option>@foreach($igrejas as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
                             </x-tda-select>
+                            <div class="sm:col-span-2"><x-tda-input campo="endereco_igreja" rotulo="Endereço completo da igreja" obrigatorio /></div>
                             <x-tda-input campo="data_ingresso_grupo" rotulo="Data de ingresso no grupo" tipo="date" />
                             <div class="sm:col-span-2">
                                 <x-tda-select campo="funcao_grupo" rotulo="Função no grupo" obrigatorio>
@@ -64,6 +65,7 @@
                         <x-tda-title titulo="Dados pessoais" descricao="Preencha os seus dados de identificação." />
                         <div class="grid gap-5 sm:grid-cols-2">
                             <div class="sm:col-span-2"><x-tda-input campo="nome" rotulo="Nome completo" obrigatorio /></div>
+                            <x-tda-input campo="nacionalidade" rotulo="Nacionalidade" obrigatorio />
                             <x-tda-input campo="data_nascimento" rotulo="Data de nascimento" tipo="date" obrigatorio />
                             <x-tda-select campo="estado_civil" rotulo="Estado civil" obrigatorio><option value="">Selecione</option><option value="solteiro">Solteiro(a)</option><option value="casado">Casado(a)</option><option value="divorciado">Divorciado(a)</option><option value="viuvo">Viúvo(a)</option><option value="uniao_estavel">União estável</option></x-tda-select>
                             <x-tda-input campo="rg" rotulo="RG/CIN" />
@@ -88,6 +90,7 @@
                             <x-tda-input campo="instagram" rotulo="Instagram" />
                             <div class="sm:col-span-2"><x-tda-input campo="endereco" rotulo="Endereço" obrigatorio /></div>
                             <x-tda-input campo="numero" rotulo="Número" obrigatorio />
+                            <x-tda-input campo="complemento" rotulo="Complemento" />
                             <x-tda-input campo="cep" rotulo="CEP" />
                             <x-tda-input campo="bairro" rotulo="Bairro" obrigatorio />
                             <x-tda-select campo="estado_id" rotulo="Estado" obrigatorio><option value="">Selecione</option>@foreach($allEstados as $item)<option value="{{ $item->id }}">{{ $item->nome }} ({{ $item->uf }})</option>@endforeach</x-tda-select>
@@ -135,6 +138,93 @@
                         </div>
                         <div class="mt-6"><x-tda-dias campo="dias_trabalho_reuniao" rotulo="Em quais dias trabalha na reunião?" opcional /></div>
                     @elseif ($step === 9)
+                        <x-tda-termo-documento tipo="adesao_servico_voluntario" :aceito="$aceite_adesao" />
+                    @elseif ($step === 10)
+                        <x-tda-termo-documento tipo="cessao_imagem_voz" :aceito="$aceite_imagem_voz" />
+                        @if($this->menorDeIdade())
+                            <section class="space-y-5 rounded-xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950/30">
+                                <div><h3 class="font-bold text-gray-900 dark:text-white">Responsável legal</h3><p class="text-sm text-gray-600 dark:text-gray-300">Obrigatório porque o participante tem menos de 18 anos.</p></div>
+                                <div class="grid gap-5 sm:grid-cols-2">
+                                    <div class="sm:col-span-2"><x-tda-input campo="responsavel_nome" rotulo="Nome completo" obrigatorio /></div>
+                                    <x-tda-input campo="responsavel_nacionalidade" rotulo="Nacionalidade" obrigatorio />
+                                    <x-tda-select campo="responsavel_estado_civil" rotulo="Estado civil" obrigatorio>
+                                        <option value="">Selecione</option>
+                                        <option value="solteiro">Solteiro(a)</option>
+                                        <option value="casado">Casado(a)</option>
+                                        <option value="divorciado">Divorciado(a)</option>
+                                        <option value="viuvo">Viúvo(a)</option>
+                                        <option value="uniao_estavel">União estável</option>
+                                    </x-tda-select>
+                                    <x-tda-input campo="responsavel_profissao" rotulo="Profissão" obrigatorio />
+                                    <x-tda-input campo="responsavel_data_nascimento" rotulo="Data de nascimento" tipo="date" obrigatorio />
+                                    <x-tda-input campo="responsavel_rg" rotulo="RG/CIN" obrigatorio />
+                                    <x-tda-input campo="responsavel_cpf" rotulo="CPF" obrigatorio />
+                                    <div class="sm:col-span-2"><x-tda-input campo="responsavel_endereco" rotulo="Endereço" obrigatorio /></div>
+                                    <x-tda-input campo="responsavel_numero" rotulo="Número" obrigatorio />
+                                    <x-tda-input campo="responsavel_complemento" rotulo="Complemento" />
+                                    <x-tda-input campo="responsavel_bairro" rotulo="Bairro" obrigatorio />
+                                    <x-tda-input campo="responsavel_cep" rotulo="CEP" obrigatorio />
+                                    <x-tda-select campo="responsavel_estado_id" rotulo="Estado" obrigatorio><option value="">Selecione</option>@foreach($allEstados as $item)<option value="{{ $item->id }}">{{ $item->nome }} ({{ $item->uf }})</option>@endforeach</x-tda-select>
+                                    <x-tda-select campo="responsavel_cidade_id" rotulo="Cidade" obrigatorio><option value="">Selecione</option>@foreach($responsavelCidades as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach</x-tda-select>
+                                </div>
+                            </section>
+                        @endif
+                    @elseif ($step === 11)
+                        <x-tda-termo-documento tipo="utilizacao_uniforme" :aceito="$aceite_uniforme" />
+                    @elseif ($step === 12)
+                        <x-tda-title titulo="Assinatura dos termos" descricao="Assine uma vez para confirmar os três documentos aceitos." />
+                        <div x-data="{
+                            desenhando: false,
+                            ctx: null,
+                            iniciar() {
+                                const c = this.$refs.canvas;
+                                const escala = window.devicePixelRatio || 1;
+                                c.width = c.clientWidth * escala; c.height = c.clientHeight * escala;
+                                this.ctx = c.getContext('2d'); this.ctx.scale(escala, escala);
+                                this.ctx.lineWidth = 2.5; this.ctx.lineCap = 'round'; this.ctx.strokeStyle = '#111827';
+                            },
+                            ponto(e) { const r=this.$refs.canvas.getBoundingClientRect(); const p=e.touches?.[0] || e; return [p.clientX-r.left,p.clientY-r.top]; },
+                            comecar(e) { e.preventDefault(); this.desenhando=true; const [x,y]=this.ponto(e); this.ctx.beginPath(); this.ctx.moveTo(x,y); },
+                            mover(e) { if(!this.desenhando) return; e.preventDefault(); const [x,y]=this.ponto(e); this.ctx.lineTo(x,y); this.ctx.stroke(); },
+                            terminar() { if(!this.desenhando) return; this.desenhando=false; $wire.set('assinatura', this.$refs.canvas.toDataURL('image/png')); },
+                            limpar() { this.ctx.clearRect(0,0,this.$refs.canvas.width,this.$refs.canvas.height); $wire.set('assinatura', null); }
+                        }" x-init="iniciar()" class="space-y-3">
+                            <div class="overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white dark:border-gray-600">
+                                <canvas x-ref="canvas" @pointerdown="comecar" @pointermove="mover" @pointerup="terminar" @pointercancel="terminar" @pointerleave="terminar" class="h-64 w-full touch-none cursor-crosshair" aria-label="Área para assinatura"></canvas>
+                            </div>
+                            <div class="flex items-center justify-between gap-3"><p class="text-sm text-gray-600 dark:text-gray-300">Use o dedo, mouse ou caneta digital.</p><button type="button" @click="limpar" class="rounded-lg border px-4 py-2 text-sm font-semibold dark:border-gray-600 dark:text-gray-200">Limpar</button></div>
+                            @error('assinatura')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="rounded-xl bg-gray-50 p-4 text-sm dark:bg-gray-800 dark:text-gray-200">
+                            Responsável pela igreja: <strong>{{ config('tda.pastor_responsavel.nome') }}</strong>
+                        </div>
+                    @elseif ($step === 13)
+                        <x-tda-title titulo="Testemunha do Termo de Adesão" descricao="A testemunha deve informar seus dados e assinar abaixo." />
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <x-tda-input campo="testemunha_nome" rotulo="Nome completo da testemunha" obrigatorio />
+                            <x-tda-input campo="testemunha_rg" rotulo="RG/CIN da testemunha" obrigatorio />
+                        </div>
+                        <div x-data="{
+                            desenhando: false, ctx: null,
+                            iniciar() {
+                                const c=this.$refs.canvas; const escala=window.devicePixelRatio||1;
+                                c.width=c.clientWidth*escala; c.height=c.clientHeight*escala;
+                                this.ctx=c.getContext('2d'); this.ctx.scale(escala,escala);
+                                this.ctx.lineWidth=2.5; this.ctx.lineCap='round'; this.ctx.strokeStyle='#111827';
+                            },
+                            ponto(e){const r=this.$refs.canvas.getBoundingClientRect();const p=e.touches?.[0]||e;return[p.clientX-r.left,p.clientY-r.top]},
+                            comecar(e){e.preventDefault();this.desenhando=true;const[x,y]=this.ponto(e);this.ctx.beginPath();this.ctx.moveTo(x,y)},
+                            mover(e){if(!this.desenhando)return;e.preventDefault();const[x,y]=this.ponto(e);this.ctx.lineTo(x,y);this.ctx.stroke()},
+                            terminar(){if(!this.desenhando)return;this.desenhando=false;$wire.set('testemunha_assinatura',this.$refs.canvas.toDataURL('image/png'))},
+                            limpar(){this.ctx.clearRect(0,0,this.$refs.canvas.width,this.$refs.canvas.height);$wire.set('testemunha_assinatura',null)}
+                        }" x-init="iniciar()" class="space-y-3">
+                            <div class="overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-white">
+                                <canvas x-ref="canvas" @pointerdown="comecar" @pointermove="mover" @pointerup="terminar" @pointercancel="terminar" @pointerleave="terminar" class="h-64 w-full touch-none cursor-crosshair" aria-label="Área para assinatura da testemunha"></canvas>
+                            </div>
+                            <div class="flex items-center justify-between gap-3"><p class="text-sm text-gray-600">A testemunha deve assinar usando o dedo, mouse ou caneta digital.</p><button type="button" @click="limpar" class="rounded-lg border px-4 py-2 text-sm font-semibold">Limpar</button></div>
+                            @error('testemunha_assinatura')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                    @elseif ($step === 14)
                         <x-tda-title titulo="Revisão e envio" descricao="Confira os dados principais antes de enviar." />
                         <dl class="grid gap-4 rounded-xl bg-gray-50 p-5 sm:grid-cols-2">
                             <div><dt class="text-xs uppercase text-gray-500">Nome</dt><dd class="font-semibold">{{ $nome }}</dd></div>
@@ -143,6 +233,8 @@
                             <div><dt class="text-xs uppercase text-gray-500">Condição</dt><dd class="font-semibold">{{ ucfirst($condicao_atual) }}</dd></div>
                             <div><dt class="text-xs uppercase text-gray-500">Bloco</dt><dd class="font-semibold">{{ optional($allBlocos->find($bloco_id))->nome }}</dd></div>
                             <div><dt class="text-xs uppercase text-gray-500">Igreja</dt><dd class="font-semibold">{{ optional(collect($igrejas)->firstWhere('id', (int)$igreja_id))->nome }}</dd></div>
+                            <div><dt class="text-xs uppercase text-gray-500">Termos</dt><dd class="font-semibold text-green-700">3 aceitos e assinados</dd></div>
+                            <div><dt class="text-xs uppercase text-gray-500">Testemunha</dt><dd class="font-semibold">{{ $testemunha_nome }} — RG/CIN {{ $testemunha_rg }}</dd></div>
                         </dl>
                         @error('cpf')<p class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ $message }}</p>@enderror
                     @endif
@@ -150,7 +242,10 @@
 
                     <div class="sticky bottom-0 z-20 -mx-5 flex items-center justify-between gap-3 border-t bg-white/95 px-5 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] backdrop-blur sm:-mx-8 sm:px-8">
                         @if($step > 1)<button type="button" wire:click="previousStep" wire:loading.attr="disabled" class="rounded-lg border px-5 py-3 font-semibold text-gray-700 hover:bg-gray-50">Voltar</button>@else<span></span>@endif
-                        @if($step < $totalSteps)
+                        @if(in_array($step, [9, 10, 11], true))
+                            @php($tipoTermo = [9 => 'adesao_servico_voluntario', 10 => 'cessao_imagem_voz', 11 => 'utilizacao_uniforme'][$step])
+                            <button type="button" wire:click="aceitarTermo('{{ $tipoTermo }}')" wire:loading.attr="disabled" class="rounded-lg bg-green-700 px-6 py-3 font-bold text-white shadow hover:bg-green-800 disabled:opacity-50">Li e aceito este termo</button>
+                        @elseif($step < $totalSteps)
                             <button type="button" wire:click="nextStep" wire:loading.attr="disabled" class="rounded-lg bg-red-700 px-6 py-3 font-semibold text-white hover:bg-red-800">Avançar</button>
                         @else
                             <button type="submit" wire:loading.attr="disabled" wire:target="submit" class="min-w-[180px] rounded-lg bg-green-700 px-6 py-3 font-bold text-white shadow-lg hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 disabled:opacity-50"><span wire:loading.remove wire:target="submit">Enviar cadastro</span><span wire:loading wire:target="submit">Enviando...</span></button>
