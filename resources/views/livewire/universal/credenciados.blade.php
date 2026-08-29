@@ -55,12 +55,16 @@
             {{-- Card Principal --}}
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6">
                 <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center mb-6 gap-4">
-                    <div class="w-full md:w-1/2">
+                    <div class="w-full md:flex-1">
                         <input wire:model.live.debounce.500ms="search" type="text"
-                            placeholder="Buscar Credenciado..."
+                            placeholder="Buscar por nome, telefone, e-mail, igreja, bloco, região ou função..."
                             class="w-full px-4 py-3 sm:py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                     </div>
                     <div class="flex flex-col gap-2 sm:flex-row">
+                    <button type="button" wire:click="$toggle('filtrosAbertos')"
+                        class="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 dark:border-gray-600 dark:bg-gray-900 dark:text-slate-200 dark:hover:bg-gray-700 font-semibold px-4 py-3 sm:py-2 rounded-lg flex items-center justify-center gap-2">
+                        Filtros
+                    </button>
                     <a href="{{ route('universal.credenciados.dashboard') }}"
                         class="bg-slate-700 hover:bg-slate-800 text-white font-semibold px-4 py-3 sm:py-2 rounded-lg shadow-md flex items-center justify-center gap-2 w-full md:w-auto transition-all">
                         Dashboard
@@ -75,6 +79,59 @@
                     </div>
                 </div>
 
+                @if($filtrosAbertos)
+                    <section class="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-700 dark:bg-gray-900/60">
+                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <label class="text-xs font-bold uppercase text-slate-500">Situação
+                                <select wire:model.live="credencial_status" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                    <option value="">Todas</option><option value="com_credencial">Com credencial</option><option value="sem_credencial">Sem credencial</option>
+                                    <option value="validas">Válidas</option><option value="vencendo">Vencendo em 30 dias</option><option value="vencidas">Vencidas</option>
+                                    <option value="sem_validade">Sem validade</option><option value="unidade_nao_faz">Unidade não emite</option>
+                                </select>
+                            </label>
+                            @if(auth()->user()->bloco_id == 21)
+                                <label class="text-xs font-bold uppercase text-slate-500">Bloco
+                                    <select wire:model.live="filtro_bloco" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                        <option value="">Todos</option>@foreach($allBlocos as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
+                                    </select>
+                                </label>
+                            @endif
+                            <label class="text-xs font-bold uppercase text-slate-500">Região
+                                <select wire:model.live="filtro_regiao" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                    <option value="">Todas</option>@foreach($regioesFiltro as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
+                                </select>
+                            </label>
+                            <label class="text-xs font-bold uppercase text-slate-500">Igreja
+                                <select wire:model.live="filtro_igreja" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                    <option value="">Todas</option>@foreach($igrejasFiltro as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
+                                </select>
+                            </label>
+                            <label class="text-xs font-bold uppercase text-slate-500">Função / cargo
+                                <select wire:model.live="filtro_cargo" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                    <option value="">Todos</option>@foreach($allCargos as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
+                                </select>
+                            </label>
+                            <label class="text-xs font-bold uppercase text-slate-500">Categoria
+                                <select wire:model.live="filtro_categoria" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                    <option value="">Todas</option>@foreach($allCategorias as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
+                                </select>
+                            </label>
+                            <label class="text-xs font-bold uppercase text-slate-500">Presídio
+                                <select wire:model.live="filtro_presidio" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                                    <option value="">Todos</option>@foreach($allPresidios as $item)<option value="{{ $item->id }}">{{ $item->nome }}</option>@endforeach
+                                </select>
+                            </label>
+                            <label class="text-xs font-bold uppercase text-slate-500">Cadastro inicial
+                                <input type="date" wire:model.live="inicio" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                            </label>
+                            <label class="text-xs font-bold uppercase text-slate-500">Cadastro final
+                                <input type="date" wire:model.live="fim" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                            </label>
+                        </div>
+                        <div class="mt-4 flex justify-end"><button type="button" wire:click="limparFiltroDashboard" class="text-sm font-bold text-blue-600 hover:underline dark:text-blue-400">Limpar todos os filtros</button></div>
+                    </section>
+                @endif
+
                 @if($credencial_status || $inicio || $fim || $filtro_bloco || $filtro_regiao || $filtro_igreja)
                     @php($rotulosStatus = [
                         'com_credencial' => 'Com credencial', 'sem_credencial' => 'Sem credencial',
@@ -88,6 +145,15 @@
                     </div>
                 @endif
 
+                <div class="mb-4 flex flex-col gap-3 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+                    <p>Exibindo <strong class="text-slate-800 dark:text-white">{{ $results->firstItem() ?? 0 }}–{{ $results->lastItem() ?? 0 }}</strong> de <strong class="text-slate-800 dark:text-white">{{ number_format($results->total(), 0, ',', '.') }}</strong> resultados.</p>
+                    <label class="flex items-center gap-2">Por página
+                        <select wire:model.live="perPage" class="rounded-lg border-slate-300 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                            @foreach([10, 25, 50, 100] as $quantidade)<option value="{{ $quantidade }}">{{ $quantidade }}</option>@endforeach
+                        </select>
+                    </label>
+                </div>
+
                 {{-- TABELA DESKTOP --}}
                 <div
                     class="hidden md:block overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
@@ -95,9 +161,11 @@
                         <thead
                             class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs font-semibold tracking-wider">
                             <tr>
-                                <th class="py-4 px-6 text-left">Nome</th>
+                                <th class="py-4 px-6 text-left"><button type="button" wire:click="sortBy('nome')" class="inline-flex items-center gap-1 hover:text-blue-600">Nome @if($sortField === 'nome')<span>{{ $sortDirection === 'asc' ? '↑' : '↓' }}</span>@endif</button></th>
+                                <th class="py-4 px-6 text-left">Contato / função</th>
                                 <th class="py-4 px-6 text-left">Presídio(s)</th>
                                 <th class="py-4 px-6 text-left">Igreja</th>
+                                <th class="py-4 px-6 text-left">Situação</th>
                                 <th class="py-4 px-6 text-center">Ações</th>
                             </tr>
                         </thead>
@@ -109,7 +177,9 @@
                                     <td
                                         class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">
                                         {{ $credenciado->nome }}
+                                        <p class="mt-1 text-xs font-normal text-gray-400">Cadastrado em {{ $credenciado->created_at?->format('d/m/Y') }}</p>
                                     </td>
+                                    <td class="px-6 py-4"><p class="font-medium text-gray-800 dark:text-gray-200">{{ $credenciado->celular }}</p><p class="mt-1 text-xs text-gray-500">{{ $credenciado->cargo->nome ?? 'Função não informada' }}</p></td>
                                     <td class="px-6 py-4">
                                         <div class="flex flex-wrap gap-1">
                                             @forelse ($credenciado->credencialPresidios as $cp)
@@ -124,7 +194,9 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
                                         {{ $credenciado->igreja->nome ?? 'N/A' }}
+                                        <p class="mt-1 text-xs text-gray-400">{{ $credenciado->regiao->nome ?? '—' }} · {{ $credenciado->bloco->nome ?? '—' }}</p>
                                     </td>
+                                    <td class="px-6 py-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-bold {{ $credenciado->situacao_credencial['classe'] }}">{{ $credenciado->situacao_credencial['rotulo'] }}</span></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <div class="flex items-center justify-center space-x-3">
                                             <button wire:click="view({{ $credenciado->id }})"
@@ -163,7 +235,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4"
+                                    <td colspan="6"
                                         class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                         Nenhum credenciado encontrado.
                                     </td>
@@ -183,6 +255,7 @@
                                     <p class="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">
                                         {{ $credenciado->nome }}
                                     </p>
+                                    <div class="mt-2 flex flex-wrap items-center gap-2"><span class="rounded-full px-2.5 py-1 text-[11px] font-bold {{ $credenciado->situacao_credencial['classe'] }}">{{ $credenciado->situacao_credencial['rotulo'] }}</span><span class="text-xs text-gray-500">{{ $credenciado->celular }}</span></div>
                                     <div class="mt-2 flex flex-wrap gap-1">
                                         @forelse ($credenciado->credencialPresidios as $cp)
                                             <span
@@ -196,6 +269,7 @@
                                     <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
                                         <strong>Igreja:</strong> {{ $credenciado->igreja->nome ?? 'N/A' }}
                                     </p>
+                                    <p class="mt-1 text-xs text-gray-500"><strong>Função:</strong> {{ $credenciado->cargo->nome ?? 'Não informada' }}</p>
                                 </div>
                                 <div
                                     class="flex flex-col space-y-3 border-l border-gray-100 dark:border-gray-700 pl-3 justify-center">
@@ -958,6 +1032,14 @@
                 </div>
             @endif
 
+        </div>
+    </div>
+
+    <div wire:loading.flex wire:target="search,credencial_status,filtro_bloco,filtro_regiao,filtro_igreja,filtro_cargo,filtro_categoria,filtro_presidio,inicio,fim,perPage,sortBy"
+        class="fixed inset-0 z-[70] items-center justify-center bg-slate-950/30 backdrop-blur-[1px]">
+        <div class="flex items-center gap-3 rounded-2xl bg-white px-5 py-3 font-semibold text-slate-700 shadow-2xl dark:bg-gray-900 dark:text-white">
+            <svg class="h-5 w-5 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+            Atualizando resultados…
         </div>
     </div>
 

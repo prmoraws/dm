@@ -18,17 +18,27 @@ class CredenciadoPolicy
         }
     }
 
-    public function view(User $user, Credenciado $credenciado)
+    public function viewAny(User $user): bool
+    {
+        return $user->bloco_id !== null;
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->bloco_id !== null;
+    }
+
+    public function view(User $user, Credenciado $credenciado): bool
     {
         return $user->bloco_id == $credenciado->bloco_id;
     }
 
-    public function update(User $user, Credenciado $credenciado)
+    public function update(User $user, Credenciado $credenciado): bool
     {
         return $user->bloco_id == $credenciado->bloco_id;
     }
 
-    public function delete(User $user, Credenciado $credenciado)
+    public function delete(User $user, Credenciado $credenciado): bool
     {
         return $user->bloco_id == $credenciado->bloco_id;
     }
