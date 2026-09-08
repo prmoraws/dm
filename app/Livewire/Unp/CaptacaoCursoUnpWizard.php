@@ -88,9 +88,9 @@ class CaptacaoCursoUnpWizard extends Component
             ],
             4 => [
                 'batizado_aguas' => ['required', 'boolean'],
-                'data_batismo_aguas' => ['nullable', 'required_if:batizado_aguas,1', 'date', 'before_or_equal:today'],
+                'data_batismo_aguas' => ['nullable', Rule::requiredIf(fn () => $this->batizado_aguas), 'date', 'before_or_equal:today'],
                 'batizado_espirito_santo' => ['required', 'boolean'],
-                'data_batismo_espirito_santo' => ['nullable', 'required_if:batizado_espirito_santo,1', 'date', 'before_or_equal:today'],
+                'data_batismo_espirito_santo' => ['nullable', Rule::requiredIf(fn () => $this->batizado_espirito_santo), 'date', 'before_or_equal:today'],
                 'mes_ingresso_igreja' => ['required', 'integer', 'between:1,12'],
                 'ano_ingresso_igreja' => ['required', 'integer', 'min:1900', 'max:'.now()->year],
             ],
