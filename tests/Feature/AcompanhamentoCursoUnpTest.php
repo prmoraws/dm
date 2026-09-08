@@ -66,9 +66,10 @@ class AcompanhamentoCursoUnpTest extends TestCase
 
         $this->assertDatabaseHas('curso_unp_presencas', [
             'matricula_id' => $matricula->id,
-            'data_aula' => '2026-10-10',
             'situacao' => 'presente',
         ]);
+        $presenca = $matricula->presencas()->firstOrFail();
+        $this->assertSame('2026-10-10', $presenca->data_aula->toDateString());
         $this->assertDatabaseHas('curso_unp_matriculas', ['id' => $matricula->id, 'situacao' => 'cursando']);
     }
 
