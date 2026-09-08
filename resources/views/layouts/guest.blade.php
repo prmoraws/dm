@@ -26,7 +26,7 @@
 
         $imagemSocial = match (true) {
             $cadastroTdaPublico => url('/public/images/tda/tda-compartilhamento.png'),
-            $cursoUnpPublico => url('/images/unp/curso-unp-compartilhamento.png'),
+            $cursoUnpPublico => url('/images/unp/curso-unp-compartilhamento.png').'?v=2',
             default => url('/images/cadastro-unp.jpg'),
         };
 
