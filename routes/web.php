@@ -21,7 +21,7 @@ use App\Livewire\Universal\{Banners, Blocos, Categorias, Pastores, PastorUnp, Ca
 use App\Http\Controllers\Universal\{PastorUnpPrintController, CadastroTdaPdfController, CadastroTdaTermoPdfController};
 use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos, DashboardBatismo, CaptacaoCursoUnpWizard, TurmasCursoUnp, GestaoCaptacoesCursoUnp, AcompanhamentoCursoUnp, CursoUnpDashboard};
 use App\Livewire\Unp\Oficios\{Anexos, Convidados, DadosCurso, InformacaoCurso, ListaCertificado, OficioCredencial, OficioEvento, OficioFormatura, OficioGeral, OficioTrabalho, OficioCop, OficioCurso, Reeducandos};
-use App\Livewire\Universal\{CaptacaoUnp, Credenciados, CredenciadosDashboard, CaptacaoCredenciadoWizard, GestaoCaptacaoCredenciados, CaptacaoSucesso, EdicaoCarroPublica, CaptacaoTdaWizard, GestaoCaptacoesTda, CadastrosTda, TdaDashboard};
+use App\Livewire\Universal\{CaptacaoUnp, Credenciados, CaptacaoCredenciadoWizard, GestaoCaptacaoCredenciados, CaptacaoSucesso, EdicaoCarroPublica, CaptacaoTdaWizard, GestaoCaptacoesTda, CadastrosTda, TdaDashboard};
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\File;
 use App\Livewire\Adm\Users as UserManagement;
@@ -134,7 +134,6 @@ Route::middleware([
         Route::get('/pessoas/{pessoa}/print', [PessoaPrintController::class, 'showFichaVoluntario'])->name('universal.pessoas.print.ficha');
         Route::get('/banners', Banners::class)->name('banners');
         Route::get('/dashboard', UniversalDashboard::class)->name('dashboard.uni');
-        Route::get('/universal/credenciados/dashboard', CredenciadosDashboard::class)->name('universal.credenciados.dashboard');
         Route::get('/universal/credenciados', Credenciados::class)->name('universal.credenciados');
         // ... adicione todas as outras rotas 'universal' aqui
     });
