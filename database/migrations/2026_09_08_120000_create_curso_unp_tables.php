@@ -44,6 +44,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('mes_ingresso_igreja');
             $table->unsignedSmallInteger('ano_ingresso_igreja');
             $table->string('status', 30)->default('pendente');
+            $table->timestamp('lgpd_aceito_em');
+            $table->string('ip_hash', 64);
+            $table->string('user_agent', 500)->nullable();
             $table->text('motivo_rejeicao')->nullable();
             $table->foreignId('revisado_por')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('revisado_em')->nullable();

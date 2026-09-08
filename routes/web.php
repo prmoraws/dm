@@ -19,7 +19,7 @@ use App\Livewire\Unp\Dashboard as UnpDashboard;
 use App\Livewire\Evento\{Entregas, Instituicoes, Terreiros};
 use App\Livewire\Universal\{Banners, Blocos, Categorias, Pastores, PastorUnp, CarroUnp, Pessoas, Regiaos, Igrejas, GestaoCaptacoes};
 use App\Http\Controllers\Universal\{PastorUnpPrintController, CadastroTdaPdfController, CadastroTdaTermoPdfController};
-use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos, DashboardBatismo};
+use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos, DashboardBatismo, CaptacaoCursoUnpWizard};
 use App\Livewire\Unp\Oficios\{Anexos, Convidados, DadosCurso, InformacaoCurso, ListaCertificado, OficioCredencial, OficioEvento, OficioFormatura, OficioGeral, OficioTrabalho, OficioCop, OficioCurso, Reeducandos};
 use App\Livewire\Universal\{CaptacaoUnp, Credenciados, CredenciadosDashboard, CaptacaoCredenciadoWizard, GestaoCaptacaoCredenciados, CaptacaoSucesso, EdicaoCarroPublica, CaptacaoTdaWizard, GestaoCaptacoesTda, CadastrosTda, TdaDashboard};
 use Illuminate\Support\Facades\Route;
@@ -70,6 +70,7 @@ Route::get('/carro/editar-veiculo', EdicaoCarroPublica::class)->name('carro.publ
 Route::get('/batismo', FormularioBatismo::class)->name('batismo.publico');
 
 Route::get('/cadastro-tda', CaptacaoTdaWizard::class)->name('captacao.tda.create');
+Route::get('/curso-unp/inscricao', CaptacaoCursoUnpWizard::class)->name('curso-unp.inscricao');
 
 
 Route::middleware([
