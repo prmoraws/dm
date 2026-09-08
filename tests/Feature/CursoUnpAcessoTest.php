@@ -14,7 +14,11 @@ class CursoUnpAcessoTest extends TestCase
 
     private function usuarioNoTime(string $nome): User
     {
-        $usuario = User::factory()->create();
+        $usuario = User::forceCreate([
+            'name' => 'Usuário '.$nome,
+            'email' => strtolower($nome).'-'.uniqid().'@example.test',
+            'password' => bcrypt('password'),
+        ]);
         $time = Team::forceCreate([
             'user_id' => $usuario->id,
             'name' => $nome,
