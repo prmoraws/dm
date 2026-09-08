@@ -17,7 +17,10 @@ class CaptacaoCursoUnpWizardTest extends TestCase
     {
         $this->get(route('curso-unp.inscricao'))
             ->assertOk()
-            ->assertSee('Curso Preparatório de Voluntários');
+            ->assertSee('Inscrição de novos voluntários da UNP')
+            ->assertSee('Curso Preparatório de Voluntários')
+            ->assertSee('images/unp/curso-unp-compartilhamento.png', false)
+            ->assertSee('images/unp/unp-logo.png', false);
     }
 
     #[Test]
