@@ -48,12 +48,14 @@ class CaptacaoCursoUnpWizardTest extends TestCase
     {
         Livewire::test(CaptacaoCursoUnpWizard::class)
             ->set('step', 4)
-            ->set('batizado_aguas', true)
-            ->set('batizado_espirito_santo', true)
+            ->set('batizado_aguas', '1')
+            ->set('batizado_espirito_santo', '1')
             ->set('mes_ingresso_igreja', 1)
             ->set('ano_ingresso_igreja', 2020)
             ->call('nextStep')
-            ->assertHasErrors(['data_batismo_aguas', 'data_batismo_espirito_santo']);
+            ->assertHasErrors(['data_batismo_aguas', 'data_batismo_espirito_santo'])
+            ->assertSet('batizado_aguas', '1')
+            ->assertSet('batizado_espirito_santo', '1');
     }
 
     #[Test]
