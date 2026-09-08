@@ -38,11 +38,11 @@ class CaptacaoCursoUnpWizard extends Component
 
     public string $celular = '';
 
-    public bool $batizado_aguas = false;
+    public $batizado_aguas = '0';
 
     public $data_batismo_aguas = null;
 
-    public bool $batizado_espirito_santo = false;
+    public $batizado_espirito_santo = '0';
 
     public $data_batismo_espirito_santo = null;
 
