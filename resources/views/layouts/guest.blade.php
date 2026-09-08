@@ -4,14 +4,33 @@
 <head>
     @php
         $cadastroTdaPublico = request()->routeIs('captacao.tda.create');
-        $tituloSocial = $cadastroTdaPublico ? 'Cadastro TDA | Terapia do Amor' : 'Cadastro UNP';
-        $descricaoSocial = $cadastroTdaPublico
-            ? 'Preencha sua ficha de cadastro como voluntário dos Auxiliares da Terapia do Amor na Bahia.'
-            : 'Cadastro de pessoas da Universal nos Presídios da Bahia.';
-        $urlSocial = $cadastroTdaPublico ? route('captacao.tda.create') : url()->current();
-        $imagemSocial = $cadastroTdaPublico
-            ? url('/public/images/tda/tda-compartilhamento.png')
-            : url('/images/cadastro-unp.jpg');
+        $cursoUnpPublico = request()->routeIs('curso-unp.inscricao');
+
+        $tituloSocial = match (true) {
+            $cadastroTdaPublico => 'Cadastro TDA | Terapia do Amor',
+            $cursoUnpPublico => 'Inscrição de novos voluntários da UNP',
+            default => 'Cadastro UNP',
+        };
+
+        $descricaoSocial = match (true) {
+            $cadastroTdaPublico => 'Preencha sua ficha de cadastro como voluntário dos Auxiliares da Terapia do Amor na Bahia.',
+            $cursoUnpPublico => 'Inscreva-se no Curso Preparatório de Voluntários da Universal nos Presídios da Bahia.',
+            default => 'Cadastro de pessoas da Universal nos Presídios da Bahia.',
+        };
+
+        $urlSocial = match (true) {
+            $cadastroTdaPublico => route('captacao.tda.create'),
+            $cursoUnpPublico => route('curso-unp.inscricao'),
+            default => url()->current(),
+        };
+
+        $imagemSocial = match (true) {
+            $cadastroTdaPublico => url('/public/images/tda/tda-compartilhamento.png'),
+            $cursoUnpPublico => url('/images/unp/curso-unp-compartilhamento.png'),
+            default => url('/images/cadastro-unp.jpg'),
+        };
+
+        $nomeSocial = $cadastroTdaPublico ? 'Terapia do Amor' : 'Universal nos Presídios';
     @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,7 +55,7 @@
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="{{ $tituloSocial }}">
-    <meta property="og:site_name" content="Terapia do Amor">
+    <meta property="og:site_name" content="{{ $nomeSocial }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $tituloSocial }}">
     <meta name="twitter:description" content="{{ $descricaoSocial }}">
