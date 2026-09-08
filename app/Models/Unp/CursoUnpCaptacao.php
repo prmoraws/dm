@@ -36,10 +36,25 @@ class CursoUnpCaptacao extends Model
         'revisado_em' => 'datetime',
     ];
 
-    public function bloco(): BelongsTo { return $this->belongsTo(Bloco::class); }
-    public function regiao(): BelongsTo { return $this->belongsTo(Regiao::class); }
-    public function igreja(): BelongsTo { return $this->belongsTo(Igreja::class); }
-    public function revisor(): BelongsTo { return $this->belongsTo(User::class, 'revisado_por'); }
+    public function bloco(): BelongsTo
+    {
+        return $this->belongsTo(Bloco::class);
+    }
+
+    public function regiao(): BelongsTo
+    {
+        return $this->belongsTo(Regiao::class);
+    }
+
+    public function igreja(): BelongsTo
+    {
+        return $this->belongsTo(Igreja::class);
+    }
+
+    public function revisor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'revisado_por');
+    }
 
     public function matriculas(): HasMany
     {

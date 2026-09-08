@@ -16,13 +16,21 @@ class GestaoCaptacoesCursoUnp extends Component
     use WithPagination;
 
     public string $search = '';
+
     public string $status = 'pendente';
+
     public $selecionado = null;
+
     public bool $modalVisualizar = false;
+
     public bool $modalAprovar = false;
+
     public bool $modalRejeitar = false;
+
     public ?int $acaoId = null;
+
     public $turma_id = null;
+
     public string $motivo_rejeicao = '';
 
     protected $queryString = [
@@ -30,8 +38,15 @@ class GestaoCaptacoesCursoUnp extends Component
         'status' => ['except' => 'pendente'],
     ];
 
-    public function updatedSearch(): void { $this->resetPage(); }
-    public function updatedStatus(): void { $this->resetPage(); }
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatus(): void
+    {
+        $this->resetPage();
+    }
 
     public function visualizar(int $id): void
     {
@@ -140,6 +155,7 @@ class GestaoCaptacoesCursoUnp extends Component
 
         if ($alterados !== 1) {
             $this->addError('motivo_rejeicao', 'Esta inscrição já foi analisada.');
+
             return;
         }
 
@@ -155,6 +171,7 @@ class GestaoCaptacoesCursoUnp extends Component
 
         if ($captacao->matriculas_count > 0 || $captacao->status === 'aprovado') {
             session()->flash('error', 'Inscrições aprovadas ou com matrícula não podem ser excluídas.');
+
             return;
         }
 

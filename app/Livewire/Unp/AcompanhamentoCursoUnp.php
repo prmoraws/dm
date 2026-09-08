@@ -12,12 +12,19 @@ use Livewire\Component;
 class AcompanhamentoCursoUnp extends Component
 {
     public $turma_id = null;
+
     public string $data_aula = '';
+
     public array $presencas = [];
+
     public array $observacoes = [];
+
     public ?int $matriculaFinalizacaoId = null;
+
     public string $resultado_final = '';
+
     public string $observacao_final = '';
+
     public bool $modalFinalizacao = false;
 
     public function mount(): void
@@ -76,6 +83,7 @@ class AcompanhamentoCursoUnp extends Component
         if ($this->data_aula < $turma->data_inicio->format('Y-m-d')
             || $this->data_aula > $turma->data_fim->format('Y-m-d')) {
             $this->addError('data_aula', 'A data da aula deve estar dentro do período da turma.');
+
             return;
         }
 
@@ -83,6 +91,7 @@ class AcompanhamentoCursoUnp extends Component
 
         if ($matriculas->isEmpty()) {
             $this->addError('turma_id', 'Esta turma não possui alunos ativos.');
+
             return;
         }
 

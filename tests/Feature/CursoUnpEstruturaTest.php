@@ -28,10 +28,10 @@ class CursoUnpEstruturaTest extends TestCase
     #[Test]
     public function models_usam_tabelas_exclusivas_do_novo_modulo(): void
     {
-        $this->assertSame('curso_unp_turmas', (new CursoUnpTurma())->getTable());
-        $this->assertSame('curso_unp_captacoes', (new CursoUnpCaptacao())->getTable());
-        $this->assertSame('curso_unp_matriculas', (new CursoUnpMatricula())->getTable());
-        $this->assertSame('curso_unp_presencas', (new CursoUnpPresenca())->getTable());
+        $this->assertSame('curso_unp_turmas', (new CursoUnpTurma)->getTable());
+        $this->assertSame('curso_unp_captacoes', (new CursoUnpCaptacao)->getTable());
+        $this->assertSame('curso_unp_matriculas', (new CursoUnpMatricula)->getTable());
+        $this->assertSame('curso_unp_presencas', (new CursoUnpPresenca)->getTable());
     }
 
     #[Test]

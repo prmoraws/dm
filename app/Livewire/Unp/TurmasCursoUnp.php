@@ -13,18 +13,31 @@ class TurmasCursoUnp extends Component
     use WithPagination;
 
     public string $search = '';
+
     public string $statusFiltro = '';
+
     public ?int $turmaId = null;
+
     public string $nome = '';
+
     public $data_inicio = null;
+
     public $data_fim = null;
+
     public string $dias_horarios = '';
+
     public string $local = '';
+
     public $instrutor_id = null;
+
     public $limite_alunos = null;
+
     public string $status = 'planejamento';
+
     public string $link_whatsapp = '';
+
     public bool $modalAberto = false;
+
     public ?int $confirmarExclusaoId = null;
 
     protected $queryString = [
@@ -32,8 +45,15 @@ class TurmasCursoUnp extends Component
         'statusFiltro' => ['except' => ''],
     ];
 
-    public function updatedSearch(): void { $this->resetPage(); }
-    public function updatedStatusFiltro(): void { $this->resetPage(); }
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStatusFiltro(): void
+    {
+        $this->resetPage();
+    }
 
     protected function rules(): array
     {
@@ -105,6 +125,7 @@ class TurmasCursoUnp extends Component
         if ($turma->matriculas_count > 0) {
             session()->flash('error', 'Esta turma possui matrículas e não pode ser excluída. Altere o status para cancelada.');
             $this->confirmarExclusaoId = null;
+
             return;
         }
 

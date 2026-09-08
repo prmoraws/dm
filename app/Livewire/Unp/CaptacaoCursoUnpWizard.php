@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Unp;
 
-use App\Models\Unp\CursoUnpCaptacao;
 use App\Models\Universal\Bloco;
 use App\Models\Universal\Igreja;
 use App\Models\Universal\Regiao;
+use App\Models\Unp\CursoUnpCaptacao;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
@@ -19,30 +19,51 @@ class CaptacaoCursoUnpWizard extends Component
     use WithFileUploads;
 
     public int $step = 1;
+
     public int $totalSteps = 5;
+
     public bool $enviado = false;
+
     public bool $lgpd_aceito = false;
 
     public $bloco_id = null;
+
     public $regiao_id = null;
+
     public $igreja_id = null;
+
     public $foto = null;
+
     public string $nome = '';
+
     public string $celular = '';
+
     public bool $batizado_aguas = false;
+
     public $data_batismo_aguas = null;
+
     public bool $batizado_espirito_santo = false;
+
     public $data_batismo_espirito_santo = null;
+
     public string $estado_civil = '';
+
     public bool $casado_civil = false;
+
     public bool $casado_igreja = false;
+
     public string $endereco_completo = '';
+
     public $mes_ingresso_igreja = null;
+
     public $ano_ingresso_igreja = null;
+
     public ?string $protocolo = null;
 
     public $blocos;
+
     public $regioes;
+
     public $igrejas;
 
     public function mount(): void
@@ -186,6 +207,7 @@ class CaptacaoCursoUnpWizard extends Component
                 'error',
                 'Muitas tentativas. Aguarde '.RateLimiter::availableIn($limiteChave).' segundos e tente novamente.'
             );
+
             return;
         }
 
@@ -202,6 +224,7 @@ class CaptacaoCursoUnpWizard extends Component
             ->whereIn('status', ['pendente', 'aprovado'])
             ->exists()) {
             $this->addError('celular', 'Já existe uma inscrição ativa com este celular.');
+
             return;
         }
 
