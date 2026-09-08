@@ -1,12 +1,18 @@
-@section('title', 'Curso Preparatório de Voluntários')
+@section('title', 'Inscrição de novos voluntários da UNP')
 
 <div class="min-h-screen bg-slate-100 px-4 py-8 sm:px-6">
     <div class="mx-auto max-w-3xl">
         <div class="overflow-hidden rounded-2xl bg-white shadow-xl">
             <header class="bg-gradient-to-r from-red-800 to-red-600 px-6 py-7 text-white">
-                <p class="text-sm font-semibold uppercase tracking-widest text-red-100">Universal nos Presídios</p>
-                <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Curso Preparatório de Voluntários</h1>
-                <p class="mt-2 text-sm text-red-100">Preencha seus dados para solicitar a participação.</p>
+                <div class="flex items-center gap-4">
+                    <img src="{{ asset('images/unp/unp-logo.png') }}" alt="Universal nos Presídios"
+                        class="h-20 w-36 shrink-0 rounded-lg bg-white p-2 object-contain sm:h-24 sm:w-44">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-widest text-red-100">Curso Preparatório de Voluntários</p>
+                        <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Inscrição de novos voluntários da UNP</h1>
+                        <p class="mt-2 text-sm text-red-100">Preencha seus dados para solicitar a participação.</p>
+                    </div>
+                </div>
             </header>
 
             @if ($enviado)
