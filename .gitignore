@@ -37,6 +37,9 @@ id_rsa.ppk
 # Fotos e uploads reais do Cadastro TDA
 /public/tda/
 
+# Fotos e uploads reais do Curso UNP
+/public/curso-unp/
+
 # Arquivos temporários do Livewire
 /storage/app/private/livewire-tmp/
 
