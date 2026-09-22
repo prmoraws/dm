@@ -138,16 +138,36 @@ git diff --check
 Também validar manualmente inscrição, captações, turmas, alunos e chamada em
 desktop e celular.
 
-## Publicação segura
+## Acesso e publicação segura
 
-O repositório não possui workflow automático de deploy. O procedimento de
-produção depende do acesso configurado fora do Git e deve ser confirmado antes
-de executar qualquer comando no servidor.
+O repositório não possui workflow automático de deploy. A produção é atualizada
+por SSH com a configuração mantida fora do Git:
+
+```text
+Alias: domo-production
+Host: sv100.ifastnet.com
+Usuário: domo
+Porta: 1394
+Chave local: ~/.ssh/domo_ifastnet_sync_rsa
+Projeto remoto: /home/domo/public_html/domo.free.nf
+Branch: curso-unp-etapa1
+```
+
+O alias equivale ao acesso explícito abaixo:
+
+```bash
+ssh -p 1394 -i ~/.ssh/domo_ifastnet_sync_rsa domo@sv100.ifastnet.com
+```
+
+Antes de publicar, confirmar por comandos somente leitura o diretório, branch,
+commit, estado do Git, versão do PHP e espaço disponível. Interromper se houver
+alterações remotas não identificadas.
 
 Ordem recomendada:
 
 1. Confirmar que a branch remota contém o commit aprovado.
-2. Fazer backup do código, `.env`, banco de dados e uploads de produção.
+2. Criar backup versionado em `/home/domo/deploy-backups`, preservando código,
+   `.env`, banco de dados e uploads pertinentes à alteração.
 3. Ativar o modo de manutenção quando a alteração exigir indisponibilidade.
 4. Atualizar somente pela branch `curso-unp-etapa1` e por fast-forward.
 5. Executar `composer install` somente quando o lockfile tiver mudado.
