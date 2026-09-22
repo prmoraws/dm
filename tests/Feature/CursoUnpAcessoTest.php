@@ -40,7 +40,7 @@ class CursoUnpAcessoTest extends TestCase
     {
         $usuario = $this->usuarioNoTime('Unp');
 
-        foreach (['curso-unp.dashboard', 'curso-unp.captacoes', 'curso-unp.turmas', 'curso-unp.acompanhamento'] as $rota) {
+        foreach (['curso-unp.dashboard', 'curso-unp.captacoes', 'curso-unp.turmas', 'curso-unp.alunos', 'curso-unp.acompanhamento'] as $rota) {
             $this->actingAs($usuario)->get(route($rota))->assertOk();
         }
     }
@@ -50,7 +50,7 @@ class CursoUnpAcessoTest extends TestCase
     {
         $usuario = $this->usuarioNoTime('Adm');
 
-        foreach (['curso-unp.dashboard', 'curso-unp.captacoes', 'curso-unp.turmas', 'curso-unp.acompanhamento'] as $rota) {
+        foreach (['curso-unp.dashboard', 'curso-unp.captacoes', 'curso-unp.turmas', 'curso-unp.alunos', 'curso-unp.acompanhamento'] as $rota) {
             $this->actingAs($usuario)->get(route($rota))->assertOk();
         }
     }

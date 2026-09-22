@@ -23,9 +23,12 @@
 
         <div class="grid gap-6 lg:grid-cols-2">
             <section class="rounded-xl bg-white p-5 shadow dark:bg-gray-800">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between gap-4">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Resultados dos alunos</h3>
-                    <a href="{{ route('curso-unp.acompanhamento') }}" class="text-sm font-semibold text-red-700">Abrir acompanhamento</a>
+                    <div class="flex gap-3 text-sm font-semibold">
+                        <a href="{{ route('curso-unp.alunos') }}" class="text-blue-700">Ver alunos</a>
+                        <a href="{{ route('curso-unp.acompanhamento') }}" class="text-red-700">Abrir chamada</a>
+                    </div>
                 </div>
                 <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     @foreach (['matriculado' => 'Matriculados', 'cursando' => 'Cursando', 'aprovado' => 'Aprovados', 'reprovado' => 'Reprovados', 'desistente' => 'Desistentes'] as $chave => $rotulo)

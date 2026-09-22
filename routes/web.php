@@ -19,7 +19,7 @@ use App\Livewire\Unp\Dashboard as UnpDashboard;
 use App\Livewire\Evento\{Entregas, Instituicoes, Terreiros};
 use App\Livewire\Universal\{Banners, Blocos, Categorias, Pastores, PastorUnp, CarroUnp, Pessoas, Regiaos, Igrejas, GestaoCaptacoes};
 use App\Http\Controllers\Universal\{PastorUnpPrintController, CadastroTdaPdfController, CadastroTdaTermoPdfController};
-use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos, DashboardBatismo, CaptacaoCursoUnpWizard, TurmasCursoUnp, GestaoCaptacoesCursoUnp, AcompanhamentoCursoUnp, CursoUnpDashboard};
+use App\Livewire\Unp\{Cargos, Cursos, Formaturas, Grupos, Instrutores, Presidios, Documentos, DashboardBatismo, CaptacaoCursoUnpWizard, TurmasCursoUnp, GestaoCaptacoesCursoUnp, AcompanhamentoCursoUnp, CursoUnpDashboard, AlunosCursoUnp};
 use App\Livewire\Unp\Oficios\{Anexos, Convidados, DadosCurso, InformacaoCurso, ListaCertificado, OficioCredencial, OficioEvento, OficioFormatura, OficioGeral, OficioTrabalho, OficioCop, OficioCurso, Reeducandos};
 use App\Livewire\Universal\{CaptacaoUnp, Credenciados, CaptacaoCredenciadoWizard, GestaoCaptacaoCredenciados, CaptacaoSucesso, EdicaoCarroPublica, CaptacaoTdaWizard, GestaoCaptacoesTda, CadastrosTda, TdaDashboard};
 use Illuminate\Support\Facades\Route;
@@ -100,6 +100,7 @@ Route::middleware([
         Route::get('/curso-unp/dashboard', CursoUnpDashboard::class)->name('curso-unp.dashboard');
         Route::get('/curso-unp/turmas', TurmasCursoUnp::class)->name('curso-unp.turmas');
         Route::get('/curso-unp/captacoes', GestaoCaptacoesCursoUnp::class)->name('curso-unp.captacoes');
+        Route::get('/curso-unp/alunos', AlunosCursoUnp::class)->name('curso-unp.alunos');
         Route::get('/curso-unp/acompanhamento', AcompanhamentoCursoUnp::class)->name('curso-unp.acompanhamento');
         Route::get('/documentos', Documentos::class)->name('documentos');
         // Subgrupo de Ofícios

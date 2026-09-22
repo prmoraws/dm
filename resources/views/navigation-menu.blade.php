@@ -45,6 +45,7 @@
                                     ['route' => 'curso-unp.dashboard', 'label' => 'Curso UNP — Dashboard'],
                                     ['route' => 'curso-unp.captacoes', 'label' => 'Curso UNP — Captações'],
                                     ['route' => 'curso-unp.turmas', 'label' => 'Curso UNP — Turmas'],
+                                    ['route' => 'curso-unp.alunos', 'label' => 'Curso UNP — Alunos'],
                                     ['route' => 'curso-unp.acompanhamento', 'label' => 'Curso UNP — Chamada'],
                                     ['route' => 'documentos', 'label' => 'Documentos'],
                                     ['route' => 'formaturas', 'label' => 'Formaturas'],
