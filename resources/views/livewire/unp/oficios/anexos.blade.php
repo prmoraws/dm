@@ -61,6 +61,48 @@
                             <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
                                 {{ $anexo_id ? 'Editar' : 'Criar' }} Anexo</h2>
                             <form wire:submit.prevent="store" class="space-y-6">
+                                @if($errors->any())
+                                    <div role="alert" class="rounded-lg bg-red-50 text-red-700 p-3 text-sm">
+                                        @foreach($errors->all() as $erro)<p>{{ $erro }}</p>@endforeach
+                                    </div>
+                                @endif
+                                @if (!$anexo_id)
+                                    @php($origemAnexo = $this->opcoesOrigemAnexo())
+                                    <div class="rounded-lg border border-blue-200 dark:border-gray-700 p-4 space-y-3">
+                                        <h3 class="font-bold text-gray-800 dark:text-gray-100">Criar lista com convidados do ofício</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-300">Selecione o presídio e o ofício para preencher as categorias automaticamente. Ao trocar a origem, a seleção de pessoas será substituída. Confira a lista antes de salvar.</p>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label for="anexo-presidio" class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Presídio</label>
+                                                <select id="anexo-presidio" wire:model.live="anexoPresidio" class="w-full rounded-md dark:bg-gray-800 dark:text-gray-300">
+                                                    <option value="">Selecione ou crie uma lista manual...</option>
+                                                    @foreach($origemAnexo['presidios'] as $presidio)
+                                                        <option value="{{ $presidio->id }}">{{ $presidio->nome }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @error('anexoPresidio')<p class="text-red-500 text-sm">{{ $message }}</p>@enderror
+                                            </div>
+                                            <div>
+                                                <label for="anexo-oficio" class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Ofício · mais recentes primeiro</label>
+                                                <select id="anexo-oficio" wire:model.live="anexoOficio" wire:key="anexo-oficios-{{ $anexoPresidio }}" @disabled(!$anexoPresidio) class="w-full rounded-md dark:bg-gray-800 dark:text-gray-300">
+                                                    <option value="">Selecione o ofício...</option>
+                                                    @foreach($origemAnexo['oficios'] as $oficio)
+                                                        <option value="{{ $oficio['value'] }}">{{ $oficio['text'] }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @if($anexoPresidio && !$origemAnexo['oficios'])<p class="text-sm text-gray-600 dark:text-gray-300">Nenhum ofício neste presídio.</p>@endif
+                                                @error('anexoOficio')<p class="text-red-500 text-sm">{{ $message }}</p>@enderror
+                                            </div>
+                                        </div>
+                                        @if($anexoOficio)
+                                            <p class="text-sm text-gray-700 dark:text-gray-300">Selecionados: {{ count($esposas_selected) }} esposas, {{ count($convidados_selected) }} convidados, {{ count($comunicacao_selected) }} da comunicação e {{ count($organizacao_selected) }} da organização.</p>
+                                            @if(!count(array_merge($esposas_selected, $convidados_selected, $comunicacao_selected, $organizacao_selected)))
+                                                <p class="text-sm text-amber-700 dark:text-amber-300">A seleção está vazia. Se o ofício ainda não tem convidados vinculados, inclua-os na tela de convidados ou selecione pessoas abaixo.</p>
+                                            @endif
+                                        @endif
+                                    </div>
+                                @endif
+
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label for="titulo"
@@ -83,25 +125,25 @@
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t dark:border-gray-700">
-                                    <div wire:ignore>
+                                    <div wire:key="anexo-selecao-esposas-{{ $anexoSelecaoVersao }}">
                                         <label
                                             class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Esposas</label>
                                         <x-advanced-select :options="$listasConvidados['esposas']" wire:model="esposas_selected"
                                             placeholder="Selecione as esposas..." />
                                     </div>
-                                    <div wire:ignore>
+                                    <div wire:key="anexo-selecao-convidados-{{ $anexoSelecaoVersao }}">
                                         <label
                                             class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Convidados</label>
                                         <x-advanced-select :options="$listasConvidados['convidados']" wire:model="convidados_selected"
                                             placeholder="Selecione os convidados..." />
                                     </div>
-                                    <div wire:ignore>
+                                    <div wire:key="anexo-selecao-comunicacao-{{ $anexoSelecaoVersao }}">
                                         <label
                                             class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Comunicação</label>
                                         <x-advanced-select :options="$listasConvidados['comunicacao']" wire:model="comunicacao_selected"
                                             placeholder="Selecione da comunicação..." />
                                     </div>
-                                    <div wire:ignore>
+                                    <div wire:key="anexo-selecao-organizacao-{{ $anexoSelecaoVersao }}">
                                         <label
                                             class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Organização</label>
                                         <x-advanced-select :options="$listasConvidados['organizacao']" wire:model="organizacao_selected"

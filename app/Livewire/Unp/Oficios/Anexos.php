@@ -12,6 +12,105 @@ class Anexos extends Component
 {
     use WithPagination;
 
+    public string $anexoPresidio = '';
+    public string $anexoOficio = '';
+    #[\Livewire\Attributes\Locked]
+    public int $anexoSelecaoVersao = 0;
+    #[\Livewire\Attributes\Locked]
+    public string $anexoTituloAutomatico = '';
+
+    public function opcoesOrigemAnexo(): array
+    {
+        return [
+            'presidios' => \App\Models\Unp\Presidio::orderBy('nome')->get(['id', 'nome']),
+            'oficios' => $this->anexoPresidio
+                ? app(\App\Services\Unp\ConvidadosEmMassa::class)->oficios((int) $this->anexoPresidio)
+                : [],
+        ];
+    }
+
+    private function limpaConvidadosOrigem(): void
+    {
+        $this->esposas_selected = [];
+        $this->convidados_selected = [];
+        $this->comunicacao_selected = [];
+        $this->organizacao_selected = [];
+        if ($this->titulo === $this->anexoTituloAutomatico) {
+            $this->titulo = '';
+        }
+        $this->anexoTituloAutomatico = '';
+        $this->anexoSelecaoVersao++;
+    }
+
+    public function updatedAnexoPresidio(): void
+    {
+        if ($this->anexo_id) {
+            return;
+        }
+        $this->anexoOficio = '';
+        $this->limpaConvidadosOrigem();
+        $this->resetErrorBag();
+    }
+
+    public function updatedAnexoOficio(): void
+    {
+        if ($this->anexo_id) {
+            return;
+        }
+        $this->limpaConvidadosOrigem();
+        $this->resetErrorBag();
+        if ($this->anexoOficio === '') {
+            return;
+        }
+        $this->validate([
+            'anexoPresidio' => 'required|integer|exists:presidios,id',
+            'anexoOficio' => 'required|string|max:80',
+        ]);
+        $service = app(\App\Services\Unp\ConvidadosEmMassa::class);
+        try {
+            $convidados = $service->convidados((int) $this->anexoPresidio, $this->anexoOficio);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'anexoOficio' => 'Selecione um ofício deste presídio.',
+            ]);
+        }
+        $this->mount();
+        foreach ([
+            'esposas' => 'esposas_selected',
+            'convidados' => 'convidados_selected',
+            'comunicação' => 'comunicacao_selected',
+            'organização' => 'organizacao_selected',
+        ] as $classe => $campo) {
+            $this->{$campo} = $convidados->where('classe', $classe)->pluck('id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+        }
+        $opcao = collect($service->oficios((int) $this->anexoPresidio))->firstWhere('value', $this->anexoOficio);
+        $presidio = \App\Models\Unp\Presidio::findOrFail((int) $this->anexoPresidio);
+        $automatico = mb_substr('Lista de convidados — ' . $presidio->nome . ' — ' . $opcao['text'], 0, 255);
+        if (!$this->titulo) {
+            $this->titulo = $automatico;
+            $this->anexoTituloAutomatico = $automatico;
+        }
+    }
+
+    private function validaOrigemAnexo(): void
+    {
+        if ($this->anexo_id || ($this->anexoPresidio === '' && $this->anexoOficio === '')) {
+            return;
+        }
+        $this->validate([
+            'anexoPresidio' => 'required|integer|exists:presidios,id',
+            'anexoOficio' => 'required|string|max:80',
+        ], ['anexoOficio.required' => 'Selecione o ofício para carregar a lista.']);
+        try {
+            app(\App\Services\Unp\ConvidadosEmMassa::class)->convidados((int) $this->anexoPresidio, $this->anexoOficio);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'anexoOficio' => 'O ofício foi excluído ou não pertence ao presídio selecionado.',
+            ]);
+        }
+    }
+
+
     // Propriedades do modelo
     public $anexo_id, $titulo, $data;
     public $esposas_selected = [], $convidados_selected = [], $comunicacao_selected = [], $organizacao_selected = [];
@@ -65,10 +164,21 @@ class Anexos extends Component
 
     public function store()
     {
+        $this->validaOrigemAnexo();
         $validatedData = $this->validate([
-            'titulo' => 'required|string|min:5',
+            'titulo' => 'required|string|min:5|max:255',
+            'esposas_selected' => 'array',
+            'esposas_selected.*' => 'integer|distinct|exists:convidados,id',
+            'convidados_selected' => 'array',
+            'convidados_selected.*' => 'integer|distinct|exists:convidados,id',
+            'comunicacao_selected' => 'array',
+            'comunicacao_selected.*' => 'integer|distinct|exists:convidados,id',
+            'organizacao_selected' => 'array',
+            'organizacao_selected.*' => 'integer|distinct|exists:convidados,id',
             'data' => 'required|date',
         ]);
+
+        unset($validatedData['esposas_selected'], $validatedData['convidados_selected'], $validatedData['comunicacao_selected'], $validatedData['organizacao_selected']);
 
         $validatedData['esposas'] = $this->esposas_selected;
         $validatedData['convidados'] = $this->convidados_selected;
@@ -82,6 +192,12 @@ class Anexos extends Component
 
     public function edit($id)
     {
+        $this->anexoPresidio = '';
+        $this->anexoOficio = '';
+        $this->anexoTituloAutomatico = '';
+        $this->anexoSelecaoVersao++;
+        $this->resetErrorBag();
+        $this->mount();
         $anexo = OficioAnexo::findOrFail($id);
         $this->anexo_id = $id;
         $this->titulo = $anexo->titulo;
