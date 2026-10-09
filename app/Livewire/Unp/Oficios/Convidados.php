@@ -9,6 +9,7 @@ use Livewire\WithPagination;
 class Convidados extends Component
 {
     use WithPagination;
+    use \App\Livewire\Unp\Oficios\Concerns\ImportaConvidadosEmMassa;
 
     // Propriedades do modelo
     public $convidado_id, $nome, $cpf, $rg, $classe;
