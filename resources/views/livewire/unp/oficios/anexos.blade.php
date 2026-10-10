@@ -181,47 +181,12 @@
                                         d="M6 18L18 6M6 6l12 12" />
                                 </svg></button>
                         </div>
-                        <div class="w-full overflow-x-auto flex justify-start md:justify-center"">
-                            <div id="oficio-para-impressao"
-                                class="w-[209mm] min-h-[296mm] bg-white text-black px-10 shadow-2xl font-sans text-sm">
-                                <div class="flex flex-col max-h-9/10"> {{-- aqui fundo --}}
-                                    <header
-                                        class="opacity-75 overflow-hidden flex flex-wrap object-scale-down justify-end items-start border-b-4 rounded-sm border-blue-950">
-                                        <div class="w-40 pb-1">
-                                            <img src="{{ asset('formaturas/logo-unp.png') }}" alt="Logo UNP">
-                                        </div>
-                                    </header>
-                                    {{-- CORREÇÃO: Posição do título da Coordenadoria --}}
-                                    <p class="text-lg font-semibold text-center mt-1">Coordenadoria de Evangelização
-                                        Estadual nas Unidades Prisionais</p>
-                                    <main class="h-[55rem] flex-grow pt-6">
-                                        <h2 class="text-center font-bold text-lg mb-6 underline">
-                                            {{ strtoupper($selectedAnexo->titulo) }}</h2>
-                                        @foreach ($selectedAnexo->listas_formatadas as $titulo_lista => $lista_convidados)
-                                            @if ($lista_convidados->filter()->isNotEmpty())
-                                                <div class="mb-6">
-                                                    <h3 class="font-bold text-base mb-2 underline">{{ $titulo_lista }}
-                                                    </h3>
-                                                    <div class="space-y-1 text-sm">
-                                                        @foreach ($lista_convidados->filter() as $convidado)
-                                                            <p>{{ $convidado->nome }} - CPF: {{ $convidado->cpf }}</p>
-                                                        @endforeach
-                                                    </div>
-                                                </div>
-                                            @endif
-                                        @endforeach
-                                    </main>
-                                    <footer
-                                        class="opacity-75 sticky text-center mb-9 text-xs pt-2 border-t-4 rounded-sm border-blue-950 mt-auto">
-                                        <p
-                                            class="border-y-2 mx-52 text-xl text-blue-950 rounded-sm border-blue-950 font-bold">
-                                            UNIVERSAL NOS <span class="text-red-600">PRESÍDIOS</span></p>
-                                        <p class="pt-2">Avenida Antônio Carlos Magalhães, 4197 Pituba, Salvador - BA
-                                            40280-000</p>
-                                    </footer>
-                                </div>
+                        <div class="anexo-preview-scroll">
+                            <div id="oficio-para-impressao" class="anexo-print-pages">
+                                @include('livewire.unp.oficios.partials.anexo-print-pages')
                             </div>
                         </div>
+                    </div>
                 @endif
 
                 {{-- CORREÇÃO: Adicionado o modal de exclusão --}}
@@ -358,6 +323,7 @@
         </div>
     </div>
 
+    @include('livewire.unp.oficios.partials.anexo-print-styles')
     <style>
         .animate-fade-in {
             animation: fadeIn 0.5s ease-out forwards;
@@ -391,32 +357,7 @@
             }
         }
 
-        @media print {
-            body * {
-                visibility: hidden;
-            }
 
-            #oficio-para-impressao,
-            #oficio-para-impressao * {
-                visibility: visible;
-            }
-
-            #oficio-para-impressao {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: auto;
-                margin: 0;
-                padding: 0;
-                border: none;
-                box-shadow: none;
-            }
-        }
     </style>
-    <script>
-        function printOficio() {
-            window.print();
-        }
-    </script>
+    @include('livewire.unp.oficios.partials.anexo-print-script', ['autoPrintAnexo' => false])
 </div>
