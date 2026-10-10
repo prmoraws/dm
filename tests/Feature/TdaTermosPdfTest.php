@@ -10,18 +10,18 @@ use Tests\TestCase;
 class TdaTermosPdfTest extends TestCase
 {
     #[Test]
-    public function rotas_de_visualizacao_e_download_dos_termos_estao_registradas(): void
+    public function rotas_dos_termos_foram_retiradas_e_pdf_cadastral_permanece(): void
     {
-        $this->assertTrue(class_exists(CadastroTdaTermoPdfController::class));
-
         foreach ([
             'universal.cadastros-tda.termos.visualizar-todos',
             'universal.cadastros-tda.termos.baixar-todos',
             'universal.cadastros-tda.termos.visualizar',
             'universal.cadastros-tda.termos.baixar',
         ] as $nome) {
-            $this->assertTrue(Route::has($nome), "A rota {$nome} não foi registrada.");
+            $this->assertFalse(\Illuminate\Support\Facades\Route::has($nome));
         }
+        $this->assertTrue(\Illuminate\Support\Facades\Route::has('universal.cadastros-tda.pdf.visualizar'));
+        $this->assertTrue(\Illuminate\Support\Facades\Route::has('universal.cadastros-tda.pdf.baixar'));
     }
 
     #[Test]

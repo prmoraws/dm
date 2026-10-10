@@ -42,7 +42,7 @@ class CadastrosTda extends Component
 
     public function visualizar(int $id):void
     {
-        $this->selecionado=$this->escopo(CadastroTda::with(['bloco','regiao','igreja','cidade','estado','responsavelLegal','termosAceitos']))->findOrFail($id);
+        $this->selecionado=$this->escopo(CadastroTda::with(['bloco','regiao','igreja','cidade','estado']))->findOrFail($id);
         $this->authorize('view',$this->selecionado);
         $this->modalVisualizar=true;
     }
@@ -103,7 +103,7 @@ class CadastrosTda extends Component
         }
         $this->validate();
         $dados=collect((new CadastroTda)->getFillable())
-            ->filter(fn($campo)=>array_key_exists($campo,$this->form))
+            ->filter(fn($campo)=>array_key_exists($campo,$this->form) && !in_array($campo, ['assinatura','testemunha_nome','testemunha_rg','testemunha_assinatura'], true))
             ->mapWithKeys(fn($campo)=>[$campo=>$this->form[$campo]])
             ->all();
         $item=$this->escopo(CadastroTda::query())->findOrFail($this->editarId);
@@ -183,7 +183,7 @@ class CadastrosTda extends Component
 
     public function render()
     {
-        $query=$this->escopo(CadastroTda::with(['bloco','igreja'])->withCount('termosAceitos'))
+        $query=$this->escopo(CadastroTda::with(['bloco','igreja']))
             ->when($this->filtro_bloco_id,fn($q)=>$q->where('bloco_id',$this->filtro_bloco_id))
             ->when($this->search,function($q){$t='%'.trim($this->search).'%';$q->where(fn($s)=>$s->where('nome','like',$t)->orWhere('celular','like',$t));})
             ->orderBy('nome');
